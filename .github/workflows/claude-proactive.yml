@@ -24,6 +24,7 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_bots: "claude[bot]"
+          claude_args: '--allowedTools "Bash(gh issue list:*),Bash(gh issue create:*),Read,Glob,Grep"'
           prompt: |
             You are the Claude Software Factory scanning itself for improvements. This repo IS
             the factory — its workflows are the product. Improving them is the primary goal.

@@ -31,5 +31,5 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_bots: "claude[bot]"
-          # CUSTOMIZE: Restrict Claude to specific tools for your stack
-          # claude_args: "--allowedTools Bash(go build ./...),Bash(go vet ./...),Bash(go test ./...)"
+          claude_args: '--allowedTools "Bash(gh pr create:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh issue:*),Bash(gh api:*),Bash(git fetch:*),Bash(git checkout:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git rebase:*),Bash(git log:*),Bash(git diff:*),Bash(git status:*),Bash(find:*),Bash(python3:*),Edit,Write,Read,Glob,Grep"'
+          # CUSTOMIZE: Add your stack's build/lint/test commands to the allowedTools list above
