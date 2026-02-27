@@ -35,5 +35,13 @@ jobs:
             Post review comments inline on the diff using the GitHub API.
             Be concise. Focus on significant issues only.
             # CUSTOMIZE: Add stack-specific review criteria here
+
+            After posting inline comments, submit a formal review decision using the GitHub API.
+            Determine whether blocking issues were found (significant bugs, security vulnerabilities, or breaking changes).
+            If no blocking issues:
+              gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews --method POST --field body='LGTM' --field event=APPROVE
+            If blocking issues found:
+              gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews --method POST --field body='Changes required: [summarize issues]' --field event=REQUEST_CHANGES
+            Only use REQUEST_CHANGES for significant bugs, security vulnerabilities, or breaking changes. Use APPROVE for minor issues, style comments, or suggestions.
           # CUSTOMIZE: Restrict to read-only tools
           # claude_args: "--allowedTools Bash(go vet ./...),Bash(go test ./...)"
