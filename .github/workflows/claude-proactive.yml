@@ -25,19 +25,31 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_bots: "claude[bot]"
           prompt: |
-            Scan this codebase for issues worth addressing. Check existing open issues first with
-            `gh issue list --state open --limit 50` to avoid duplicates.
+            You are the Claude Software Factory scanning itself for improvements. This repo IS
+            the factory — its workflows are the product. Improving them is the primary goal.
 
-            Look for:
+            Check existing open issues first to avoid duplicates:
+              gh issue list --state open --limit 50
+
+            Scan in two passes:
+
+            **Pass 1 — Factory self-improvement** (highest priority):
+            Read every file in .github/workflows/ and CLAUDE.md. Look for:
+            - Workflow prompts that are ambiguous, incomplete, or could be sharper
+            - Missing error handling or edge cases (shepherd merging too eagerly, etc.)
+            - New workflows that would close gaps in the loop (dependency updates, changelog,
+              security scanning, performance regression, notification hooks, etc.)
+            - Ways to make the self-loop tighter (concurrency, retry logic, bot triggers)
+            - CLAUDE.md instructions that are unclear or missing
+
+            **Pass 2 — General codebase issues**:
             - Logic errors, race conditions, unhandled exceptions
-            - Security gaps (injection vulnerabilities, hardcoded secrets)
-            - Performance bottlenecks (N+1 queries, unbounded allocations)
+            - Security vulnerabilities or hardcoded secrets
             - TODO/FIXME comments representing real work
-            - Dead code and unused dependencies
-            - Opportunities to extend or improve the factory workflows themselves
+            - Dead code or unused files
 
-            For each issue found, file with `gh issue create --title "..." --body "..."`.
-            End every issue body with "@claude please implement this".
-            File at most 3 issues per run. Zero is fine if nothing warrants attention.
+            For each finding, file an issue:
+              gh issue create --title "..." --body "...specific file, current behavior, desired behavior...\n\n@claude please implement this"
 
-            # CUSTOMIZE: Add stack-specific scan patterns here
+            File at most 3 issues per run. Prioritize factory self-improvement over general bugs.
+            Zero issues is fine if nothing concrete warrants attention.
