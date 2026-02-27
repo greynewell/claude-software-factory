@@ -1,0 +1,52 @@
+name: Stale Issue and PR Management
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/stale@v9
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+          # Issue configuration
+          days-before-issue-stale: 14
+          days-before-issue-close: 7
+          stale-issue-label: stale
+          stale-issue-message: >
+            This issue has been automatically marked as stale because it has had no
+            activity for 14 days. If no further activity occurs within 7 days, it
+            will be closed. If this issue is still relevant, please leave a comment
+            or remove the `stale` label.
+          close-issue-message: >
+            This issue has been automatically closed due to 21 days of inactivity.
+            If this is still relevant, please open a new issue with updated context.
+
+          # PR configuration
+          days-before-pr-stale: 7
+          days-before-pr-close: 7
+          stale-pr-label: stale
+          stale-pr-message: >
+            This pull request has been automatically marked as stale because it has
+            had no activity for 7 days. If no further activity occurs within 7 days,
+            it will be closed. If this PR is still in progress, please leave a comment
+            or remove the `stale` label.
+          close-pr-message: >
+            This pull request has been automatically closed due to 14 days of
+            inactivity. If this work is still needed, please reopen or open a new PR.
+
+          # Exempt labels — issues/PRs with these labels will not go stale
+          exempt-issue-labels: "in-progress,blocked,pinned"
+          exempt-pr-labels: "in-progress,blocked,pinned"
+
+          # Exempt PRs targeting main from auto-close
+          exempt-all-pr-milestones: false
+          close-issue-reason: not_planned
