@@ -36,9 +36,11 @@ jobs:
             For each non-draft PR:
             1. Check CI: gh pr checks <number> --repo ${{ github.repository }}
             2. Check review status: gh pr view <number> --repo ${{ github.repository }} --json reviewDecision,mergeable
-            3. If CI passes and reviewDecision is not CHANGES_REQUESTED, merge:
+            3. If CI passes and reviewDecision is not CHANGES_REQUESTED and mergeable is not false, merge:
                gh pr merge <number> --repo ${{ github.repository }} --rebase --delete-branch
             4. If reviewDecision is CHANGES_REQUESTED, post a comment:
                gh pr comment <number> --repo ${{ github.repository }} --body "@claude please address the review feedback and push an update"
+            5. If mergeable is false (merge conflicts exist), post a comment:
+               gh pr comment <number> --repo ${{ github.repository }} --body "@claude this PR has merge conflicts. Please rebase onto main and push an update."
 
             Use --repo ${{ github.repository }} on every gh command.
