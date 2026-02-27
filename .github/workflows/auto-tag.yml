@@ -1,0 +1,70 @@
+name: Auto Tag
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute next version
+        id: version
+        run: |
+          set -euo pipefail
+
+          # Get the latest semver tag, or default to v0.0.0
+          latest=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || echo "")
+          if [ -z "$latest" ]; then
+            latest="v0.0.0"
+          fi
+          echo "Latest tag: $latest"
+
+          # Parse major.minor.patch
+          major=$(echo "$latest" | sed 's/v//' | cut -d. -f1)
+          minor=$(echo "$latest" | sed 's/v//' | cut -d. -f2)
+          patch=$(echo "$latest" | sed 's/v//' | cut -d. -f3)
+
+          # Get commit message
+          msg=$(git log -1 --pretty=%B)
+          echo "Commit message: $msg"
+
+          # Determine bump type from conventional commits
+          if echo "$msg" | grep -qiE 'BREAKING CHANGE|^[a-z]+(\(.+\))?!:'; then
+            major=$((major + 1))
+            minor=0
+            patch=0
+            bump="major"
+          elif echo "$msg" | grep -qiE '^feat(\(.+\))?:'; then
+            minor=$((minor + 1))
+            patch=0
+            bump="minor"
+          else
+            patch=$((patch + 1))
+            bump="patch"
+          fi
+
+          next="v${major}.${minor}.${patch}"
+          echo "Bump: $bump -> $next"
+          echo "next=$next" >> "$GITHUB_OUTPUT"
+          echo "bump=$bump" >> "$GITHUB_OUTPUT"
+
+      - name: Create tag
+        env:
+          TAG: ${{ steps.version.outputs.next }}
+        run: |
+          git tag "$TAG"
+          git push origin "$TAG"
+
+      - name: Summary
+        run: |
+          echo "### Tagged ${{ steps.version.outputs.next }} (${{ steps.version.outputs.bump }})" >> "$GITHUB_STEP_SUMMARY"
