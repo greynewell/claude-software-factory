@@ -28,9 +28,13 @@ jobs:
 
           # CUSTOMIZE: Authorization check — pick one:
 
-          # Option 1: Restrict to specific username(s)
+          # Option 1: Restrict to specific username(s) and trusted bots
           ALLOWED_USERS="greynewell"
-          if echo "$ALLOWED_USERS" | grep -qw "$ISSUE_AUTHOR"; then
+          ALLOWED_BOTS="github-actions[bot] claude[bot]"
+          # Use grep -w for regular users; use grep -F with space padding for bots
+          # because [bot] suffix contains regex metacharacters that break grep -w
+          if echo "$ALLOWED_USERS" | grep -qw "$ISSUE_AUTHOR" || \
+             echo " $ALLOWED_BOTS " | grep -qF " $ISSUE_AUTHOR "; then
             AUTHORIZED=true
           else
             AUTHORIZED=false
