@@ -1,0 +1,27 @@
+name: Bug
+description: Report a bug. Claude will investigate and fix it.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What's broken?
+      description: Describe the bug and how to reproduce it.
+      placeholder: "The /users endpoint returns 500 when the database is empty."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should happen instead?
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Logs, screenshots, related code paths.
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        @claude please implement this
