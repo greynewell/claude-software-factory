@@ -24,15 +24,17 @@ jobs:
           allowed_bots: "claude[bot],github-actions[bot]"
           claude_args: '--allowedTools "Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh pr merge:*),Bash(gh pr comment:*),Bash(gh pr review:*),Bash(gh api:*),Bash(gh issue:*),Bash(git fetch:*),Bash(git log:*),Bash(git diff:*),Bash(git status:*),Read,Glob,Grep"'
           prompt: |
-            You are a PR shepherd. For each open, non-draft pull request:
+            You are a PR shepherd for the repo ${{ github.repository }}.
 
-            1. Check CI status with `gh pr checks <number>`
-            2. Check if mergeable with `gh pr view <number> --json mergeable,reviewDecision`
-            3. If CI passes and no unresolved change requests exist, merge with:
-               `gh pr merge <number> --rebase --delete-branch`
-               # CUSTOMIZE: Change --rebase to --squash or --merge
-            4. If there are unresolved review comments, post a comment:
-               "@claude please address the review feedback and push an update"
+            List all open, non-draft PRs:
+              gh pr list --repo ${{ github.repository }} --state open --json number,title,isDraft,mergeable
 
-            List PRs with: `gh pr list --state open --json number,title,isDraft,mergeable`
-            Skip draft PRs.
+            For each non-draft PR:
+            1. Check CI: gh pr checks <number> --repo ${{ github.repository }}
+            2. Check review status: gh pr view <number> --repo ${{ github.repository }} --json reviewDecision,mergeable
+            3. If CI passes and reviewDecision is not CHANGES_REQUESTED, merge:
+               gh pr merge <number> --repo ${{ github.repository }} --rebase --delete-branch
+            4. If reviewDecision is CHANGES_REQUESTED, post a comment:
+               gh pr comment <number> --repo ${{ github.repository }} --body "@claude please address the review feedback and push an update"
+
+            Use --repo ${{ github.repository }} on every gh command.
