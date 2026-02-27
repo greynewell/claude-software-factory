@@ -47,6 +47,7 @@ jobs:
           exempt-issue-labels: "in-progress,blocked,pinned"
           exempt-pr-labels: "in-progress,blocked,pinned"
 
-          # Exempt PRs targeting main from auto-close
-          exempt-all-pr-milestones: false
+          # Exempt draft PRs from stale marking (they may be actively in progress)
+          exempt-draft-prs: true
+
           close-issue-reason: not_planned
