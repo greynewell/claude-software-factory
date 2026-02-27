@@ -1,0 +1,81 @@
+name: Claude Self-Improve (Weekly Deep Scan)
+
+on:
+  schedule:
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: write
+  id-token: write
+  actions: read
+
+jobs:
+  weekly-deep-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Claude Weekly Deep Scanner
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: "claude[bot],github-actions[bot]"
+          claude_args: '--allowedTools "Bash(gh issue list:*),Bash(gh issue create:*),Bash(gh pr list:*),Bash(gh pr view:*),Read,Glob,Grep"'
+          prompt: |
+            You are the Claude Software Factory conducting its weekly deep self-improvement scan.
+            This repo IS the factory — its workflows are the product. Improving them is the primary goal.
+
+            This scan runs once a week (Sundays) and performs deeper analysis than the hourly scanner.
+            Take your time and be thorough.
+
+            Check existing open issues first to avoid duplicates:
+              gh issue list --state open --limit 50
+
+            Perform the following four passes in order:
+
+            **Pass 1 — Cross-workflow consistency check** (highest priority):
+            Read EVERY file in .github/workflows/ in full. Then cross-reference them:
+            - Do they share consistent naming conventions, permissions blocks, and action versions?
+            - Are there duplicated patterns that should be extracted or standardized?
+            - Do workflow triggers (on:) interlock correctly — e.g., does claude-auto-assign.yml
+              reliably hand off to claude.yml, and does claude.yml hand off to claude-code-review.yml?
+            - Are there race conditions or concurrency gaps (two workflows racing to close the same PR)?
+            - Do all workflows that need CLAUDE_CODE_OAUTH_TOKEN actually declare it?
+
+            **Pass 2 — CLAUDE.md accuracy audit**:
+            Read CLAUDE.md in full. Cross-reference every claim against the actual workflow files:
+            - Does the documented self-improvement loop match the real trigger chain?
+            - Are any referenced workflow files missing (compare documented names to actual filenames)?
+            - Are documented commands (gh pr create flags, branch naming patterns, commit conventions)
+              consistent with what the workflows actually enforce?
+            - Flag any instructions that are ambiguous, contradictory, or no longer accurate.
+
+            **Pass 3 — Missing workflow gaps**:
+            Consider which common automation capabilities are absent from this factory:
+            - Changelog generation (e.g., auto-updating CHANGELOG.md on merge to main)
+            - Dependency update automation (e.g., Dependabot or a workflow to bump action versions)
+            - Security scanning (e.g., secret detection, SAST, permissions audits)
+            - Stale issue/PR management (auto-close or label stale items)
+            - Release notes generation tied to the auto-tag.yml workflow
+            - Notification hooks (Slack, email) for important factory events
+            For each gap, assess whether it would meaningfully improve the factory loop.
+
+            **Pass 4 — Recurring PR pattern analysis**:
+            List recent merged PRs:
+              gh pr list --state merged --limit 20 --json number,title,body
+            Look for:
+            - Patterns of similar manual changes that should be automated
+            - Recurring review comments that indicate a missing lint or check step
+            - PRs that took many iterations — could a better prompt or pre-check have helped?
+            - Any failure patterns in CI that the factory itself could detect proactively
+
+            For each concrete finding across all four passes, file an issue:
+              gh issue create --title "..." --body "...specific file, line or behavior, current state, desired improvement...\n\n@claude please implement this"
+
+            File at most 5 issues per run. Prioritize findings that improve the factory loop itself.
+            Prefer specific, actionable issues over vague observations.
+            Zero issues is fine if nothing concrete warrants attention.
