@@ -1,0 +1,50 @@
+name: Proactive Scanner
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Scan codebase with Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Scan the codebase and create GitHub issues for problems you find.
+
+            Look for:
+            - Logic errors, unhandled errors, race conditions
+            - Missing or broken error handling
+            - Security concerns (injection, hardcoded secrets, auth gaps)
+            - Performance issues (N+1 queries, unbounded allocations, missing indexes)
+            - TODO/FIXME comments that describe real work
+            - Dead code or unused dependencies
+
+            Rules:
+            - Create at most 3 issues per run
+            - Do NOT create duplicates — check existing open issues first with `gh issue list`
+            - Each issue must be specific, actionable, and include the file path and line numbers
+            - End each issue body with: @claude please implement this
+            - Use `gh issue create` to create each issue
+            - If nothing is worth filing, create zero issues — that's fine
+          # CUSTOMIZE: Add read-only tools for your build/lint commands
+          # claude_args: |
+          #   --allowedTools "Bash(go vet ./...),Bash(grep -r TODO .)"
