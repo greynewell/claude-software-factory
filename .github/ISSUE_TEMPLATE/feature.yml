@@ -1,0 +1,22 @@
+name: Feature
+description: Request a new feature. Claude will implement it automatically.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What should it do?
+      description: Describe the feature. Be as specific as possible — Claude reads this literally.
+      placeholder: "Add a /health endpoint that returns { \"status\": \"ok\" } with a 200 response code."
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Anything else Claude should know — files to look at, constraints, related issues.
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        @claude please implement this
