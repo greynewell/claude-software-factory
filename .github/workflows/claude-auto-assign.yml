@@ -1,56 +1,55 @@
-name: Auto-Assign Claude
+name: Claude Auto-Assign
 
 on:
   issues:
     types: [opened]
 
+permissions:
+  issues: write
+
 jobs:
-  assign:
-    if: contains(github.event.issue.body, '@claude')
+  auto-assign:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions:
-      issues: write
     steps:
-      - name: Check author authorization
-        id: auth
+      - name: Check authorization and trigger Claude
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
           ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
-          REPO: ${{ github.repository }}
-        run: |
-          # CUSTOMIZE: Change this authorization check to match your setup.
-          # Options:
-          #   1. Org membership (default below)
-          #   2. Username allowlist: [[ "$ISSUE_AUTHOR" =~ ^(user1|user2)$ ]]
-          #   3. Open to everyone: remove this step entirely
-
-          ORG=$(echo "$REPO" | cut -d'/' -f1)
-
-          # Check if repo owner is an org
-          if gh api "orgs/$ORG" > /dev/null 2>&1; then
-            # Org repo — check membership
-            if gh api "orgs/$ORG/members/$ISSUE_AUTHOR" > /dev/null 2>&1; then
-              echo "authorized=true" >> "$GITHUB_OUTPUT"
-            else
-              echo "authorized=false" >> "$GITHUB_OUTPUT"
-            fi
-          else
-            # Personal repo — check if author is the repo owner
-            if [ "$ISSUE_AUTHOR" = "$ORG" ]; then
-              echo "authorized=true" >> "$GITHUB_OUTPUT"
-            else
-              echo "authorized=false" >> "$GITHUB_OUTPUT"
-            fi
-          fi
-
-      - name: Trigger Claude
-        if: steps.auth.outputs.authorized == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           REPO: ${{ github.repository }}
         run: |
-          gh issue comment "$ISSUE_NUMBER" \
-            --repo "$REPO" \
-            --body "@claude please implement this issue"
+          # Check if issue contains @claude
+          if ! echo "$ISSUE_BODY" | grep -q "@claude"; then
+            echo "Issue does not mention @claude, skipping"
+            exit 0
+          fi
+
+          # CUSTOMIZE: Authorization check — pick one:
+
+          # Option 1: Restrict to specific username(s)
+          ALLOWED_USERS="greynewell"
+          if echo "$ALLOWED_USERS" | grep -qw "$ISSUE_AUTHOR"; then
+            AUTHORIZED=true
+          else
+            AUTHORIZED=false
+          fi
+
+          # Option 2: Open to all users (uncomment to use)
+          # AUTHORIZED=true
+
+          # Option 3: Org membership check (uncomment to use)
+          # ORG="your-org-name"
+          # if gh api orgs/$ORG/members/$ISSUE_AUTHOR --silent 2>/dev/null; then
+          #   AUTHORIZED=true
+          # else
+          #   AUTHORIZED=false
+          # fi
+
+          if [ "$AUTHORIZED" = "true" ]; then
+            gh issue comment $ISSUE_NUMBER --repo $REPO \
+              --body "@claude please implement this issue"
+          else
+            echo "User $ISSUE_AUTHOR not authorized, skipping"
+          fi

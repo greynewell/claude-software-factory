@@ -1,43 +1,38 @@
-name: Code Review
+name: Claude Code Review
 
 on:
   pull_request:
     types: [opened, synchronize, ready_for_review, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: read
+  id-token: write
+  actions: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  review:
-    if: ${{ !github.event.pull_request.draft }}
+  claude-code-review:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: read
-      pull-requests: write
-      issues: read
-      id-token: write
-      actions: read
+    if: github.event.pull_request.draft == false
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Review with Claude
+      - name: Run Claude Code Review
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: "claude[bot]"
           prompt: |
-            Review this pull request. Focus on:
-            1. Correctness — logic errors, edge cases, off-by-ones
-            2. Security — injection, auth issues, secrets in code
-            3. Breaking changes — API changes, removed functionality
+            Review this pull request for:
+            1. Correctness and logic errors
+            2. Security vulnerabilities
+            3. Breaking changes
 
-            Be concise. Only comment on things that should change.
-            Do not comment on style, formatting, or naming unless it causes bugs.
-            If the PR looks good, say so briefly and approve.
-          # CUSTOMIZE: Add your build/test commands to verify the PR
-          # claude_args: |
-          #   --allowedTools "Bash(go build ./...),Bash(go test ./...)"
+            Post review comments inline on the diff using the GitHub API.
+            Be concise. Focus on significant issues only.
+            # CUSTOMIZE: Add stack-specific review criteria here
+          # CUSTOMIZE: Restrict to read-only tools
+          # claude_args: "--allowedTools Bash(go vet ./...),Bash(go test ./...)"

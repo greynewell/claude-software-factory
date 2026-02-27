@@ -1,77 +1,36 @@
-name: PR Shepherd
+name: Claude PR Shepherd
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: '*/15 * * * *'
   workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+  actions: read
 
 jobs:
   shepherd:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: write
-      pull-requests: write
-      issues: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Run Claude PR Shepherd
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: "claude[bot]"
+          prompt: |
+            You are a PR shepherd. For each open, non-draft pull request:
 
-      - name: Shepherd open PRs
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-        run: |
-          set -euo pipefail
+            1. Check CI status with `gh pr checks <number>`
+            2. Check if mergeable with `gh pr view <number> --json mergeable,reviewDecision`
+            3. If CI passes and no unresolved change requests exist, merge with:
+               `gh pr merge <number> --rebase --delete-branch`
+               # CUSTOMIZE: Change --rebase to --squash or --merge
+            4. If there are unresolved review comments, post a comment:
+               "@claude please address the review feedback and push an update"
 
-          echo "=== PR Shepherd ==="
-
-          # Fetch all open, non-draft PRs
-          prs=$(gh pr list --repo "$REPO" --state open --json number,title,isDraft,mergeable,reviewDecision --jq '.[] | select(.isDraft == false)')
-
-          if [ -z "$prs" ]; then
-            echo "No open PRs to shepherd."
-            exit 0
-          fi
-
-          echo "$prs" | jq -c '.' | while read -r pr; do
-            number=$(echo "$pr" | jq -r '.number')
-            title=$(echo "$pr" | jq -r '.title')
-            mergeable=$(echo "$pr" | jq -r '.mergeable')
-            decision=$(echo "$pr" | jq -r '.reviewDecision')
-
-            echo ""
-            echo "--- PR #$number: $title ---"
-            echo "  Mergeable: $mergeable"
-            echo "  Review decision: $decision"
-
-            # Check CI status
-            ci_status=$(gh pr checks "$number" --repo "$REPO" --json state --jq '[.[] | select(.state != "PENDING")] | if all(.state == "SUCCESS") then "passing" elif any(.state == "FAILURE") then "failing" else "pending" end' 2>/dev/null || echo "unknown")
-            echo "  CI: $ci_status"
-
-            # Check for unresolved change requests
-            unresolved=$(gh api "repos/$REPO/pulls/$number/reviews" --jq '[.[] | select(.state == "CHANGES_REQUESTED")] | length' 2>/dev/null || echo "0")
-            echo "  Unresolved reviews: $unresolved"
-
-            # Merge if ready
-            if [ "$ci_status" = "passing" ] && [ "$mergeable" = "MERGEABLE" ] && [ "$unresolved" = "0" ]; then
-              if [ "$decision" = "APPROVED" ] || [ "$decision" = "" ] || [ "$decision" = "null" ]; then
-                echo "  -> Merging PR #$number"
-                # CUSTOMIZE: Change --rebase to --squash or --merge
-                gh pr merge "$number" --repo "$REPO" --rebase --delete-branch || echo "  -> Merge failed for PR #$number"
-              else
-                echo "  -> Skipping: review decision is $decision"
-              fi
-            elif [ "$ci_status" = "failing" ]; then
-              echo "  -> CI failing, skipping"
-            elif [ "$unresolved" != "0" ]; then
-              echo "  -> Has unresolved reviews, requesting Claude fix"
-              gh pr comment "$number" --repo "$REPO" \
-                --body "@claude please address the unresolved review comments on this PR" || true
-            else
-              echo "  -> Not ready yet (mergeable=$mergeable, ci=$ci_status)"
-            fi
-          done
-
-          echo ""
-          echo "=== Shepherd complete ==="
+            List PRs with: `gh pr list --state open --json number,title,isDraft,mergeable`
+            Skip draft PRs.

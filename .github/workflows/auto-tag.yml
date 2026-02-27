@@ -8,63 +8,37 @@ permissions:
   contents: write
 
 jobs:
-  tag:
+  auto-tag:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Compute next version
-        id: version
+      - name: Create semantic version tag
         run: |
-          set -euo pipefail
+          # Get latest tag or start at v0.0.0
+          LATEST=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || echo "v0.0.0")
+          MAJOR=$(echo $LATEST | cut -d. -f1 | tr -d 'v')
+          MINOR=$(echo $LATEST | cut -d. -f2)
+          PATCH=$(echo $LATEST | cut -d. -f3)
 
-          # Get the latest semver tag, or default to v0.0.0
-          latest=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || echo "")
-          if [ -z "$latest" ]; then
-            latest="v0.0.0"
-          fi
-          echo "Latest tag: $latest"
+          # Analyze latest commit message
+          MSG=$(git log -1 --pretty=%s)
 
-          # Parse major.minor.patch
-          major=$(echo "$latest" | sed 's/v//' | cut -d. -f1)
-          minor=$(echo "$latest" | sed 's/v//' | cut -d. -f2)
-          patch=$(echo "$latest" | sed 's/v//' | cut -d. -f3)
-
-          # Get commit message
-          msg=$(git log -1 --pretty=%B)
-          echo "Commit message: $msg"
-
-          # Determine bump type from conventional commits
-          if echo "$msg" | grep -qiE 'BREAKING CHANGE|^[a-z]+(\(.+\))?!:'; then
-            major=$((major + 1))
-            minor=0
-            patch=0
-            bump="major"
-          elif echo "$msg" | grep -qiE '^feat(\(.+\))?:'; then
-            minor=$((minor + 1))
-            patch=0
-            bump="minor"
+          if echo "$MSG" | grep -qE "BREAKING CHANGE|!:"; then
+            MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0
+          elif echo "$MSG" | grep -qE "^feat(\(.+\))?:"; then
+            MINOR=$((MINOR + 1)); PATCH=0
+          elif echo "$MSG" | grep -qE "^fix(\(.+\))?:"; then
+            PATCH=$((PATCH + 1))
           else
-            patch=$((patch + 1))
-            bump="patch"
+            echo "No version bump needed for: $MSG"
+            exit 0
           fi
 
-          next="v${major}.${minor}.${patch}"
-          echo "Bump: $bump -> $next"
-          echo "next=$next" >> "$GITHUB_OUTPUT"
-          echo "bump=$bump" >> "$GITHUB_OUTPUT"
-
-      - name: Create tag
-        env:
-          TAG: ${{ steps.version.outputs.next }}
-        run: |
-          git tag "$TAG"
-          git push origin "$TAG"
-
-      - name: Summary
-        run: |
-          echo "### Tagged ${{ steps.version.outputs.next }} (${{ steps.version.outputs.bump }})" >> "$GITHUB_STEP_SUMMARY"
+          NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+          git tag $NEW_TAG
+          git push origin $NEW_TAG
+          echo "Tagged: $NEW_TAG"
