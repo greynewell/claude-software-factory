@@ -35,5 +35,14 @@ jobs:
             Post review comments inline on the diff using the GitHub API.
             Be concise. Focus on significant issues only.
             # CUSTOMIZE: Add stack-specific review criteria here
+
+            After posting any inline comments, submit a formal GitHub review decision:
+            1. Get the PR info: `gh pr view --json number,baseRepository`
+            2. Submit a formal review using the reviews endpoint:
+               - If no blocking issues found → APPROVE:
+                 `gh api repos/{owner}/{repo}/pulls/{number}/reviews --method POST --raw-field body="LGTM — no blocking issues found." --field event=APPROVE`
+               - If blocking issues found → REQUEST_CHANGES:
+                 `gh api repos/{owner}/{repo}/pulls/{number}/reviews --method POST --raw-field body="Blocking issues found. See inline comments." --field event=REQUEST_CHANGES`
+            You must submit exactly one formal review decision (APPROVE or REQUEST_CHANGES) before finishing.
           # CUSTOMIZE: Restrict to read-only tools
           # claude_args: "--allowedTools Bash(go vet ./...),Bash(go test ./...)"
