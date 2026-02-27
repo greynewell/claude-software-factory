@@ -1,0 +1,43 @@
+name: Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+      id-token: write
+      actions: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Review with Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Review this pull request. Focus on:
+            1. Correctness — logic errors, edge cases, off-by-ones
+            2. Security — injection, auth issues, secrets in code
+            3. Breaking changes — API changes, removed functionality
+
+            Be concise. Only comment on things that should change.
+            Do not comment on style, formatting, or naming unless it causes bugs.
+            If the PR looks good, say so briefly and approve.
+          # CUSTOMIZE: Add your build/test commands to verify the PR
+          # claude_args: |
+          #   --allowedTools "Bash(go build ./...),Bash(go test ./...)"

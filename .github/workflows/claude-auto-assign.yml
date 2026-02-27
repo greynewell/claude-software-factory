@@ -1,0 +1,56 @@
+name: Auto-Assign Claude
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  assign:
+    if: contains(github.event.issue.body, '@claude')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Check author authorization
+        id: auth
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+          REPO: ${{ github.repository }}
+        run: |
+          # CUSTOMIZE: Change this authorization check to match your setup.
+          # Options:
+          #   1. Org membership (default below)
+          #   2. Username allowlist: [[ "$ISSUE_AUTHOR" =~ ^(user1|user2)$ ]]
+          #   3. Open to everyone: remove this step entirely
+
+          ORG=$(echo "$REPO" | cut -d'/' -f1)
+
+          # Check if repo owner is an org
+          if gh api "orgs/$ORG" > /dev/null 2>&1; then
+            # Org repo — check membership
+            if gh api "orgs/$ORG/members/$ISSUE_AUTHOR" > /dev/null 2>&1; then
+              echo "authorized=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "authorized=false" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            # Personal repo — check if author is the repo owner
+            if [ "$ISSUE_AUTHOR" = "$ORG" ]; then
+              echo "authorized=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "authorized=false" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
+      - name: Trigger Claude
+        if: steps.auth.outputs.authorized == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" \
+            --repo "$REPO" \
+            --body "@claude please implement this issue"
