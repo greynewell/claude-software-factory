@@ -27,7 +27,7 @@ jobs:
           # Analyze latest commit message
           MSG=$(git log -1 --pretty=%s)
 
-          if echo "$MSG" | grep -qE "BREAKING CHANGE|!:"; then
+          if echo "$MSG" | grep -qE "BREAKING CHANGE|^[a-z]+(\(.+\))?!:"; then
             MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0
           elif echo "$MSG" | grep -qE "^feat(\(.+\))?:"; then
             MINOR=$((MINOR + 1)); PATCH=0
