@@ -59,7 +59,11 @@ jobs:
                If the most recent "merge conflicts" comment timestamp is non-empty AND is more recent than (or equal to) the last commit timestamp, skip to the next PR without posting (de-dup: already notified for this push).
                Otherwise (no such comment exists, OR the comment predates the latest commit), post a comment and skip to the next PR:
                gh pr comment <number> --repo ${{ github.repository }} --body "@claude this PR has merge conflicts. Please rebase onto main and push an update."
-            4. If CI passes (at least one check present, no check shows "fail" or "cancelled", every non-skipped check shows "pass" or "success") and mergeable is true (not false or null) and reviewDecision is APPROVED, merge:
+            4. Pre-checks before attempting merge (evaluate in order, skip to next PR on any hit):
+               - If mergeable is null: GitHub has not yet computed mergeability — skip this PR silently and wait for the next shepherd run — do not post a comment.
+               - If CI is not passing: skip (step 1 handles notifications).
+               - If reviewDecision is not APPROVED: skip (steps 5–6 handle notifications).
+               If all pre-checks pass (mergeable is true, CI passes, reviewDecision is APPROVED), merge:
                Run the merge command, capturing both output and exit code:
                  merge_output=$(gh pr merge <number> --repo ${{ github.repository }} --rebase --delete-branch 2>&1); merge_exit=$?
                If merge_exit is non-zero (the merge command failed):
@@ -69,7 +73,6 @@ jobs:
                  Otherwise post a comment and skip to the next PR:
                  printf '@claude the automated merge failed with:\n%s\nPlease investigate and push a fix or manually merge.' "${merge_output}" > /tmp/merge_error_body.txt
                  gh pr comment <number> --repo ${{ github.repository }} --body-file /tmp/merge_error_body.txt
-               If mergeable is null (GitHub has not yet computed mergeability), skip this PR silently and wait for the next shepherd run — do not post a comment.
             5. If reviewDecision is CHANGES_REQUESTED, post a comment:
                gh pr comment <number> --repo ${{ github.repository }} --body "@claude please address the review feedback and push an update"
             6. If reviewDecision is null or REVIEW_REQUIRED:
