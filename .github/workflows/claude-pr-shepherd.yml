@@ -52,7 +52,14 @@ jobs:
                Otherwise post a comment and skip to the next PR:
                gh pr comment <number> --repo ${{ github.repository }} --body "@claude this PR has merge conflicts. Please rebase onto main and push an update."
             4. If CI passes (at least one check present, no check shows "fail" or "cancelled", every non-skipped check shows "pass" or "success") and mergeable is true (not false or null) and reviewDecision is APPROVED, merge:
-               gh pr merge <number> --repo ${{ github.repository }} --rebase --delete-branch
+               Run the merge command, capturing both output and exit code:
+                 merge_output=$(gh pr merge <number> --repo ${{ github.repository }} --rebase --delete-branch 2>&1); merge_exit=$?
+               If merge_exit is non-zero (the merge command failed):
+                 Before posting, check for duplicate failure comments:
+                 Run: gh api repos/${{ github.repository }}/issues/<number>/comments --jq '.[].body'
+                 If any existing comment body contains the phrase "automated merge failed", skip to the next PR without posting.
+                 Otherwise post a comment and skip to the next PR:
+                 gh pr comment <number> --repo ${{ github.repository }} --body "@claude the automated merge failed with: ${merge_output}. Please investigate and push a fix or manually merge."
                If mergeable is null (GitHub has not yet computed mergeability), skip this PR silently and wait for the next shepherd run — do not post a comment.
             5. If reviewDecision is CHANGES_REQUESTED, post a comment:
                gh pr comment <number> --repo ${{ github.repository }} --body "@claude please address the review feedback and push an update"
