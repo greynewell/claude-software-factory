@@ -144,6 +144,14 @@ jobs:
             CHANGELOG_PUSHED=false
           fi
 
+          # Idempotency guard: exit cleanly if a concurrent run already pushed this tag.
+          # This prevents spurious 'Release missing' issues when two runs race to create
+          # the same tag (e.g. during rapid merges before a concurrency group is in place).
+          if git ls-remote --tags origin "$NEW_TAG" | grep -q "$NEW_TAG"; then
+            echo "Tag $NEW_TAG already exists on origin (concurrent run beat us) — exiting cleanly"
+            exit 0
+          fi
+
           # Tag the current HEAD (includes changelog commit if push succeeded)
           git tag $NEW_TAG
           git push origin $NEW_TAG
