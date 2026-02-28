@@ -38,18 +38,26 @@ jobs:
                Evaluate the output carefully before proceeding:
                - If the output is empty (no checks listed), CI has not started yet → SKIP this PR entirely, do not merge
                - If any check shows a status of "pending" or "in_progress", CI is still running → SKIP this PR, do not merge
-               - If any check shows a status of "fail" or "cancelled", CI has failed → do NOT merge; instead check for duplicate comments:
-                 Run: gh api repos/${{ github.repository }}/issues/<number>/comments --jq '.[].body'
-                 If any existing comment body contains the phrase "CI checks are failing", skip to the next PR without posting.
-                 Otherwise post a comment and skip to the next PR:
-                 gh pr comment <number> --repo ${{ github.repository }} --body "@claude CI checks are failing on this PR. Please review the failed checks and push a fix."
+               - If any check shows a status of "fail" or "cancelled", CI has failed → do NOT merge; instead apply timestamp-aware de-dup:
+                 Get the timestamp of the most recent "CI checks are failing" comment:
+                   Run: gh api repos/${{ github.repository }}/issues/<number>/comments --jq '[.[] | select(.body | contains("CI checks are failing"))] | max_by(.created_at) | .created_at'
+                   (Returns an ISO timestamp string, or null if no such comment exists)
+                 Get the timestamp of the most recent commit to this PR:
+                   Run: gh pr view <number> --repo ${{ github.repository }} --json commits --jq '.commits[-1].committedDate'
+                 If the most recent "CI checks are failing" comment timestamp is non-empty AND is more recent than (or equal to) the last commit timestamp, skip to the next PR without posting (de-dup: already notified for this push).
+                 Otherwise (no such comment exists, OR the comment predates the latest commit), post a comment and skip to the next PR:
+                   gh pr comment <number> --repo ${{ github.repository }} --body "@claude CI checks are failing on this PR. Please review the failed checks and push a fix."
                - Checks with status "skipping", "skipped", or "neutral" are non-blocking — treat them as passing
                - CI passes when: at least one check is present, no check shows "fail" or "cancelled", and every non-skipped check shows "pass" or "success"
             2. Check review status: gh pr view <number> --repo ${{ github.repository }} --json reviewDecision,mergeable
-            3. If mergeable is false (merge conflicts exist), before posting check for duplicate comments:
-               Run: gh api repos/${{ github.repository }}/issues/<number>/comments --jq '.[].body'
-               If any existing comment body contains the phrase "merge conflicts", skip to the next PR without posting.
-               Otherwise post a comment and skip to the next PR:
+            3. If mergeable is false (merge conflicts exist), apply timestamp-aware de-dup:
+               Get the timestamp of the most recent "merge conflicts" comment:
+                 Run: gh api repos/${{ github.repository }}/issues/<number>/comments --jq '[.[] | select(.body | contains("merge conflicts"))] | max_by(.created_at) | .created_at'
+                 (Returns an ISO timestamp string, or null if no such comment exists)
+               Get the timestamp of the most recent commit to this PR:
+                 Run: gh pr view <number> --repo ${{ github.repository }} --json commits --jq '.commits[-1].committedDate'
+               If the most recent "merge conflicts" comment timestamp is non-empty AND is more recent than (or equal to) the last commit timestamp, skip to the next PR without posting (de-dup: already notified for this push).
+               Otherwise (no such comment exists, OR the comment predates the latest commit), post a comment and skip to the next PR:
                gh pr comment <number> --repo ${{ github.repository }} --body "@claude this PR has merge conflicts. Please rebase onto main and push an update."
             4. If CI passes (at least one check present, no check shows "fail" or "cancelled", every non-skipped check shows "pass" or "success") and mergeable is true (not false or null) and reviewDecision is APPROVED, merge:
                Run the merge command, capturing both output and exit code:
