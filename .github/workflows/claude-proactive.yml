@@ -25,7 +25,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GH_WORKFLOW_TOKEN }}
           allowed_bots: "claude[bot],github-actions[bot]"
-          claude_args: '--allowedTools "Bash(gh issue list:*),Bash(gh issue create:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(date:*),Read,Glob,Grep"'
+          claude_args: '--allowedTools "Bash(gh issue list:*),Bash(gh issue create:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh run list:*),Bash(date:*),Read,Glob,Grep"'
           prompt: |
             You are the Claude Software Factory scanning itself for improvements. This repo IS
             the factory — its workflows are the product. Improving them is the primary goal.
@@ -49,7 +49,16 @@ jobs:
             - Ways to make the self-loop tighter (concurrency, retry logic, bot triggers)
             - CLAUDE.md instructions that are unclear or missing
 
-            Also check the real-world health of the factory loop by running:
+            Also check the real-world health of the factory loop. First, check shepherd health:
+              gh run list --workflow=claude-pr-shepherd.yml --limit 5 --json conclusion,startedAt
+            If every one of the 5 most recent shepherd runs has conclusion "failure" or "cancelled"
+            (i.e. no successful run exists), the shepherd itself is broken. In that case:
+            - File ONE issue about shepherd health (e.g. "claude-pr-shepherd.yml: all recent runs
+              failing — investigate broken shepherd") instead of per-PR stuck issues.
+            - Do NOT file per-PR stuck issues when the shepherd is globally broken; those would
+              only add noise while the root cause is the broken shepherd.
+            If at least one recent shepherd run succeeded, the shepherd is healthy. In that case,
+            check stuck PRs by running:
               gh pr list --repo ${{ github.repository }} --state open --json number,title,createdAt,updatedAt,reviewDecision
             Flag and file an issue for each of the following (if no open issue already covers it):
             - Any PR that has been open > 2 days without a review decision (scanner is blind or
