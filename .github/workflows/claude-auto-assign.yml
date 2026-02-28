@@ -54,7 +54,7 @@ jobs:
 
           if [ "$AUTHORIZED" = "true" ]; then
             gh issue comment $ISSUE_NUMBER --repo $REPO \
-              --body "@claude please implement this issue"
+              --body "@claude please implement issue #${ISSUE_NUMBER}. When you create a PR, include Closes #${ISSUE_NUMBER} in the PR body so the issue auto-closes on merge."
 
             # Ensure the claude-task label exists, then apply it so stale.yml
             # won't auto-close factory-assigned issues before Claude implements them
