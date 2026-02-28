@@ -1,3 +1,7 @@
+## v0.9.11 — 2026-02-28
+
+- fix: add updatedAt to pr list and gate stuck-shepherd on 2h threshold
+
 ## v0.9.9 — 2026-02-28
 
 - fix: handle git pull --rebase failure in auto-tag with fallback and notification
