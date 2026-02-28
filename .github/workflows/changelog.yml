@@ -1,8 +1,15 @@
 name: Changelog
 
 on:
-  release:
-    types: [published]
+  # Triggered manually to enrich a release's CHANGELOG entry with Claude-generated notes.
+  # Automatic changelog updates are now handled atomically inside auto-tag.yml before tagging,
+  # so that the tagged commit always contains the changelog entry for that version.
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name to generate changelog entry for (e.g. v1.2.3)'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -25,19 +32,21 @@ jobs:
           allowed_bots: "claude[bot],github-actions[bot]"
           claude_args: '--allowedTools "Bash(gh release view:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git config:*),Bash(git pull:*),Read,Write(CHANGELOG.md),Edit(CHANGELOG.md)"'
           prompt: |
-            Update CHANGELOG.md for the just-published release ${{ github.event.release.tag_name }}.
+            Update CHANGELOG.md for the release ${{ github.event.inputs.tag_name }}.
 
             Steps:
             1. Fetch the release details:
-                 gh release view ${{ github.event.release.tag_name }} --json tagName,body
+                 gh release view ${{ github.event.inputs.tag_name }} --json tagName,body,publishedAt
 
             2. Read the current CHANGELOG.md if it exists, or treat the existing content as empty.
 
-            3. Prepend a new entry at the top of the file in this exact format:
-                 ## ${{ github.event.release.tag_name }} — YYYY-MM-DD
+            3. If CHANGELOG.md already has an entry for ${{ github.event.inputs.tag_name }}, replace
+               that entry with the enriched release body. Otherwise, prepend a new entry at the top
+               of the file in this exact format:
+                 ## ${{ github.event.inputs.tag_name }} — YYYY-MM-DD
                  <release body text>
 
-               Use ${{ github.event.release.published_at }} for the date; format it as YYYY-MM-DD.
+               Use the release's publishedAt for the date; format it as YYYY-MM-DD.
                If the file already has content, leave a blank line between the new entry and the existing content.
 
             4. Write the updated (or newly created) CHANGELOG.md.
@@ -46,6 +55,6 @@ jobs:
                  git config user.name "github-actions[bot]"
                  git config user.email "github-actions[bot]@users.noreply.github.com"
                  git add CHANGELOG.md
-                 git commit -m "chore: update changelog for ${{ github.event.release.tag_name }}"
+                 git commit -m "chore: update changelog for ${{ github.event.inputs.tag_name }}"
                  git pull --rebase origin main
                  git push origin main
