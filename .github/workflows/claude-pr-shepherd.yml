@@ -64,7 +64,14 @@ jobs:
                - If CI is not passing: skip (step 1 handles notifications).
                - If reviewDecision is not APPROVED: skip (steps 5–6 handle notifications).
                - If none of the label objects in the labels array has name equal to "claude-task": skip to the next PR — do not merge, do not comment.
-               If all pre-checks pass (mergeable is true, CI passes, reviewDecision is APPROVED, and PR has the claude-task label), merge:
+               - Stale approval check: verify that the most recent APPROVED review was submitted after the latest commit (prevents merging unreviewed code when a new commit was pushed after the approval).
+                 Get the most recent APPROVED review timestamp:
+                   Run: gh api repos/${{ github.repository }}/pulls/<number>/reviews --jq '[.[] | select(.state=="APPROVED")] | max_by(.submitted_at) | .submitted_at'
+                   (Returns an ISO 8601 timestamp string, or empty/null if no APPROVED review exists)
+                 Get the most recent commit timestamp:
+                   Run: gh pr view <number> --repo ${{ github.repository }} --json commits --jq '.commits[-1].committedDate'
+                 Compare the two timestamps as strings (ISO 8601 UTC strings sort correctly lexicographically). If the approval timestamp is less than the commit timestamp, the approval predates the latest commit — skip this PR silently (a new review run should be in flight or will be triggered by step 6). Do not post a comment.
+               If all pre-checks pass (mergeable is true, CI passes, reviewDecision is APPROVED, approval is not stale, and PR has the claude-task label), merge:
                Run the merge command, capturing both output and exit code:
                  merge_output=$(gh pr merge <number> --repo ${{ github.repository }} --rebase --delete-branch 2>&1); merge_exit=$?
                If merge_exit is non-zero (the merge command failed):
