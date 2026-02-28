@@ -54,6 +54,14 @@ jobs:
           if [ "$AUTHORIZED" = "true" ]; then
             gh issue comment $ISSUE_NUMBER --repo $REPO \
               --body "@claude please implement this issue"
+
+            # Ensure the claude-task label exists, then apply it so stale.yml
+            # won't auto-close factory-assigned issues before Claude implements them
+            gh label create claude-task \
+              --repo "$REPO" \
+              --description "Assigned to Claude for implementation" \
+              --color "7057ff" 2>/dev/null || true
+            gh issue edit $ISSUE_NUMBER --repo $REPO --add-label claude-task
           else
             echo "User $ISSUE_AUTHOR not authorized, skipping"
           fi
