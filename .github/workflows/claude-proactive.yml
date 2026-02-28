@@ -51,8 +51,13 @@ jobs:
 
             Also check the real-world health of the factory loop. First, check shepherd health:
               gh run list --workflow=claude-pr-shepherd.yml --limit 5 --json conclusion,startedAt
+            If the command returns an empty array (no results), the shepherd has no run history —
+            treat it as healthy and proceed directly to per-PR stuck logic below.
             If every one of the 5 most recent shepherd runs has conclusion "failure" or "cancelled"
             (i.e. no successful run exists), the shepherd itself is broken. In that case:
+            - Before filing, check for an existing shepherd health issue:
+                gh issue list --state open --search "shepherd" --limit 10
+              Only file ONE issue if no matching open issue already exists.
             - File ONE issue about shepherd health (e.g. "claude-pr-shepherd.yml: all recent runs
               failing — investigate broken shepherd") instead of per-PR stuck issues.
             - Do NOT file per-PR stuck issues when the shepherd is globally broken; those would
