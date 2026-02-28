@@ -148,6 +148,10 @@ jobs:
           git tag $NEW_TAG
           git push origin $NEW_TAG
           echo "Tagged: $NEW_TAG"
+
+          # Ensure claude-task label exists so notification issues aren't auto-closed by stale bot
+          gh label create claude-task --description 'Assigned to Claude for implementation' --color 7057ff 2>/dev/null || true
+
           if gh release create "$NEW_TAG" \
             --generate-notes \
             --title "$NEW_TAG"; then
@@ -161,6 +165,7 @@ jobs:
             gh issue create \
               --title "Release missing for ${NEW_TAG}: gh release create failed" \
               --body "$RELEASE_BODY" \
+              --label claude-task \
               || echo "::warning::Failed to create notification issue for missing release"
           fi
 
@@ -175,6 +180,7 @@ jobs:
               gh issue create \
                 --title "Changelog skipped for ${NEW_TAG}: failed to push changelog to main" \
                 --body "$ISSUE_BODY" \
+                --label claude-task \
                 || echo "::warning::Failed to create notification issue"
             fi
           fi
