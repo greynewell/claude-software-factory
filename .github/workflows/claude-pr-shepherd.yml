@@ -38,19 +38,20 @@ jobs:
                Evaluate the output carefully before proceeding:
                - If the output is empty (no checks listed), CI has not started yet → SKIP this PR entirely, do not merge
                - If any check shows a status of "pending" or "in_progress", CI is still running → SKIP this PR, do not merge
-               - If any check shows a status of "fail", CI has failed → do NOT merge; instead check for duplicate comments:
+               - If any check shows a status of "fail" or "cancelled", CI has failed → do NOT merge; instead check for duplicate comments:
                  Run: gh api repos/${{ github.repository }}/issues/<number>/comments --jq '.[].body'
                  If any existing comment body contains the phrase "CI checks are failing", skip to the next PR without posting.
                  Otherwise post a comment and skip to the next PR:
                  gh pr comment <number> --repo ${{ github.repository }} --body "@claude CI checks are failing on this PR. Please review the failed checks and push a fix."
-               - CI passes only when: at least one check is present AND every check shows "pass"
+               - Checks with status "skipping", "skipped", or "neutral" are non-blocking — treat them as passing
+               - CI passes when: at least one check is present, no check shows "fail" or "cancelled", and every non-skipped check shows "pass" or "success"
             2. Check review status: gh pr view <number> --repo ${{ github.repository }} --json reviewDecision,mergeable
             3. If mergeable is false (merge conflicts exist), before posting check for duplicate comments:
                Run: gh api repos/${{ github.repository }}/issues/<number>/comments --jq '.[].body'
                If any existing comment body contains the phrase "merge conflicts", skip to the next PR without posting.
                Otherwise post a comment and skip to the next PR:
                gh pr comment <number> --repo ${{ github.repository }} --body "@claude this PR has merge conflicts. Please rebase onto main and push an update."
-            4. If CI passes (at least one check present, all checks completed with "pass" status) and reviewDecision is APPROVED, merge:
+            4. If CI passes (at least one check present, no check shows "fail" or "cancelled", every non-skipped check shows "pass" or "success") and reviewDecision is APPROVED, merge:
                gh pr merge <number> --repo ${{ github.repository }} --rebase --delete-branch
             5. If reviewDecision is CHANGES_REQUESTED, post a comment:
                gh pr comment <number> --repo ${{ github.repository }} --body "@claude please address the review feedback and push an update"
