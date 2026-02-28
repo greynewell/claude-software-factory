@@ -45,7 +45,7 @@ jobs:
 
           # Exempt labels — issues/PRs with these labels will not go stale
           exempt-issue-labels: "in-progress,blocked,pinned,claude-task"
-          exempt-pr-labels: "in-progress,blocked,pinned"
+          exempt-pr-labels: "in-progress,blocked,pinned,claude-task"
 
           # Exempt draft PRs from stale marking (they may be actively in progress)
           exempt-draft-prs: true

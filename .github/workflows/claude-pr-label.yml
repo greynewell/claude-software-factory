@@ -1,0 +1,37 @@
+name: Claude PR Label
+
+on:
+  pull_request:
+    types: [opened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  label-pr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Add claude-task label to bot-created PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          REPO: ${{ github.repository }}
+        run: |
+          BOT_AUTHORS="github-actions[bot] claude[bot]"
+
+          if echo " $BOT_AUTHORS " | grep -qF " $PR_AUTHOR "; then
+            echo "PR opened by $PR_AUTHOR — adding claude-task label"
+
+            # Ensure the label exists (idempotent)
+            gh label create claude-task \
+              --repo "$REPO" \
+              --description "Assigned to Claude for implementation" \
+              --color "7057ff" 2>/dev/null || true
+
+            # Apply the label to the PR
+            gh issue edit "$PR_NUMBER" --repo "$REPO" --add-label claude-task
+          else
+            echo "PR opened by $PR_AUTHOR — not a bot, skipping"
+          fi
