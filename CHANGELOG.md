@@ -1,3 +1,7 @@
+## v0.9.13 — 2026-02-28
+
+- fix: add @claude trigger to auto-tag failure notification issue body
+
 ## v0.9.12 — 2026-02-28
 
 - fix: handle gh release create failure in auto-tag workflow
