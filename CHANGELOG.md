@@ -1,3 +1,7 @@
+## v0.9.9 — 2026-02-28
+
+- fix: handle git pull --rebase failure in auto-tag with fallback and notification
+
 ## v0.9.8 — 2026-02-28
 
 - fix: add || true to tag pipeline to prevent pipefail abort on empty grep
