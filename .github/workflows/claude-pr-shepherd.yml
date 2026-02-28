@@ -52,7 +52,10 @@ jobs:
                gh pr comment <number> --repo ${{ github.repository }} --body "@claude this PR has merge conflicts. Please rebase onto main and push an update."
             4. If CI passes (at least one check present, all checks completed with "pass" status) and reviewDecision is APPROVED, merge:
                gh pr merge <number> --repo ${{ github.repository }} --rebase --delete-branch
-            5. If reviewDecision is CHANGES_REQUESTED, post a comment:
+            5. If reviewDecision is CHANGES_REQUESTED, before posting check for duplicate comments:
+               Run: gh api repos/${{ github.repository }}/issues/<number>/comments --jq '.[].body'
+               If any existing comment body contains the phrase "please address the review feedback", skip to the next PR without posting.
+               Otherwise post a comment:
                gh pr comment <number> --repo ${{ github.repository }} --body "@claude please address the review feedback and push an update"
             6. If reviewDecision is null or REVIEW_REQUIRED, skip and wait for the review workflow to complete
 
