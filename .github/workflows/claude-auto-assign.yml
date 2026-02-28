@@ -16,12 +16,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           REPO: ${{ github.repository }}
         run: |
-          # Check if issue contains @claude
-          if ! echo "$ISSUE_BODY" | grep -q "@claude"; then
+          # Check if issue contains @claude in body or title
+          if ! echo "$ISSUE_BODY$ISSUE_TITLE" | grep -q "@claude"; then
             echo "Issue does not mention @claude, skipping"
             exit 0
           fi
