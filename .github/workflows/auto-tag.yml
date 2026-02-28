@@ -30,15 +30,31 @@ jobs:
       - name: Create semantic version tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_REF: ${{ github.event.inputs.ref }}
+          REF_NAME: ${{ github.ref_name }}
+          SERVER_URL: ${{ github.server_url }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
         run: |
           # Guard: for manual dispatch without an explicit ref, we must be on main.
           # Dispatching from a non-main branch sets github.sha to that branch's HEAD;
           # the downstream "git push origin main" would then push foreign commits to main.
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && \
-             [ -z "${{ github.event.inputs.ref }}" ] && \
-             [ "${{ github.ref_name }}" != "main" ]; then
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && \
+             [ -z "$INPUT_REF" ] && \
+             [ "$REF_NAME" != "main" ]; then
             echo "::error::workflow_dispatch must be triggered from main or with an explicit ref input"
             exit 1
+          fi
+
+          # Guard: for manual dispatch with an explicit ref, ensure the checked-out
+          # commit is an ancestor of origin/main to prevent pushing foreign commits.
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ -n "$INPUT_REF" ]; then
+            git fetch origin main
+            if ! git merge-base --is-ancestor HEAD origin/main; then
+              echo "::error::Provided ref is not on the main branch ancestry; aborting to prevent corrupting main"
+              exit 1
+            fi
           fi
 
           # Skip if this is an automated changelog update to prevent recursive triggering
@@ -140,7 +156,7 @@ jobs:
             echo "::warning::gh release create failed for $NEW_TAG; tag is pushed but no GitHub release exists"
             RELEASE_BODY=$(printf 'The `auto-tag` workflow pushed tag `%s` to the repo but `gh release create` failed (a transient network error, rate limit, or API timeout may have occurred).\n\nThe git tag exists but no GitHub release was created. To retry manually:\n\n```\ngh release create %s --generate-notes --title %s\n```\n\nWorkflow run: %s/%s/actions/runs/%s\n\n@claude please implement this so the factory can retry via: `gh release create %s --generate-notes --title %s`' \
               "$NEW_TAG" "$NEW_TAG" "$NEW_TAG" \
-              "${{ github.server_url }}" "${{ github.repository }}" "${{ github.run_id }}" \
+              "$SERVER_URL" "$REPOSITORY" "$RUN_ID" \
               "$NEW_TAG" "$NEW_TAG")
             gh issue create \
               --title "Release missing for ${NEW_TAG}: gh release create failed" \
@@ -151,7 +167,7 @@ jobs:
           # Notify if changelog was skipped so a human can update it manually
           if [ "$CHANGELOG_PUSHED" = "false" ]; then
             ISSUE_BODY=$(printf 'The `auto-tag` workflow tagged and released `%s` but could not update `CHANGELOG.md` because pushing the changelog commit to `main` failed (a concurrent push or transient network error may have occurred during the workflow run).\n\nThe tag and GitHub release were created from the original HEAD. Please update `CHANGELOG.md` manually or trigger the `changelog.yml` workflow.\n\nWorkflow run: %s/%s/actions/runs/%s\n\n@claude please run the changelog.yml workflow for this tag and close this issue once done.' \
-              "$NEW_TAG" "${{ github.server_url }}" "${{ github.repository }}" "${{ github.run_id }}")
+              "$NEW_TAG" "$SERVER_URL" "$REPOSITORY" "$RUN_ID")
             gh issue create \
               --title "Changelog skipped for ${NEW_TAG}: failed to push changelog to main" \
               --body "$ISSUE_BODY" \
