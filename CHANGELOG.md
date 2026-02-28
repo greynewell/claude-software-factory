@@ -1,3 +1,7 @@
+## v0.9.12 — 2026-02-28
+
+- fix: handle gh release create failure in auto-tag workflow
+
 ## v0.9.11 — 2026-02-28
 
 - fix: add updatedAt to pr list and gate stuck-shepherd on 2h threshold
