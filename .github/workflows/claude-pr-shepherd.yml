@@ -51,8 +51,9 @@ jobs:
                If any existing comment body contains the phrase "merge conflicts", skip to the next PR without posting.
                Otherwise post a comment and skip to the next PR:
                gh pr comment <number> --repo ${{ github.repository }} --body "@claude this PR has merge conflicts. Please rebase onto main and push an update."
-            4. If CI passes (at least one check present, no check shows "fail" or "cancelled", every non-skipped check shows "pass" or "success") and reviewDecision is APPROVED, merge:
+            4. If CI passes (at least one check present, no check shows "fail" or "cancelled", every non-skipped check shows "pass" or "success") and mergeable is true (not false or null) and reviewDecision is APPROVED, merge:
                gh pr merge <number> --repo ${{ github.repository }} --rebase --delete-branch
+               If mergeable is null (GitHub has not yet computed mergeability), skip this PR silently and wait for the next shepherd run — do not post a comment.
             5. If reviewDecision is CHANGES_REQUESTED, post a comment:
                gh pr comment <number> --repo ${{ github.repository }} --body "@claude please address the review feedback and push an update"
             6. If reviewDecision is null or REVIEW_REQUIRED:
