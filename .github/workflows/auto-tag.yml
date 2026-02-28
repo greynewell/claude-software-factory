@@ -115,9 +115,21 @@ jobs:
           git tag $NEW_TAG
           git push origin $NEW_TAG
           echo "Tagged: $NEW_TAG"
-          gh release create "$NEW_TAG" \
+          if gh release create "$NEW_TAG" \
             --generate-notes \
-            --title "$NEW_TAG"
+            --title "$NEW_TAG"; then
+            echo "Release created: $NEW_TAG"
+          else
+            echo "::warning::gh release create failed for $NEW_TAG; tag is pushed but no GitHub release exists"
+            RELEASE_BODY=$(printf 'The `auto-tag` workflow pushed tag `%s` to the repo but `gh release create` failed (a transient network error, rate limit, or API timeout may have occurred).\n\nThe git tag exists but no GitHub release was created. To retry manually:\n\n```\ngh release create %s --generate-notes --title %s\n```\n\nWorkflow run: %s/%s/actions/runs/%s\n\n@claude please implement this so the factory can retry via: `gh release create %s --generate-notes --title %s`' \
+              "$NEW_TAG" "$NEW_TAG" "$NEW_TAG" \
+              "${{ github.server_url }}" "${{ github.repository }}" "${{ github.run_id }}" \
+              "$NEW_TAG" "$NEW_TAG")
+            gh issue create \
+              --title "Release missing for ${NEW_TAG}: gh release create failed" \
+              --body "$RELEASE_BODY" \
+              || echo "::warning::Failed to create notification issue for missing release"
+          fi
 
           # Notify if changelog was skipped so a human can update it manually
           if [ "$CHANGELOG_PUSHED" = "false" ]; then
