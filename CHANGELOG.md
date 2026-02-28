@@ -1,3 +1,7 @@
+## v0.11.0 — 2026-02-28
+
+- feat: add Bash(gh run list:*) to deep scan allowedTools
+
 ## v0.10.0 — 2026-02-28
 
 - fix: address shepherd health check review feedback
