@@ -1,3 +1,7 @@
+## v0.11.2 — 2026-02-28
+
+- fix: remove ambiguous label guard note from shepherd prompt
+
 ## v0.11.1 — 2026-02-28
 
 - fix: add claude-task label guard to merge step in pr-shepherd
