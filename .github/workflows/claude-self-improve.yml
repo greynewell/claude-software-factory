@@ -25,7 +25,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GH_WORKFLOW_TOKEN }}
           allowed_bots: "claude[bot],github-actions[bot]"
-          claude_args: '--allowedTools "Bash(gh issue list:*),Bash(gh issue create:*),Bash(gh pr list:*),Bash(gh pr view:*),Read,Glob,Grep"'
+          claude_args: '--allowedTools "Bash(gh issue list:*),Bash(gh issue create:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh run list:*),Read,Glob,Grep"'
           prompt: |
             You are the Claude Software Factory conducting its weekly deep self-improvement scan.
             This repo IS the factory — its workflows are the product. Improving them is the primary goal.
@@ -70,14 +70,18 @@ jobs:
             - Notification hooks (Slack, email) for important factory events
             For each gap, assess whether it would meaningfully improve the factory loop.
 
-            **Pass 4 — Recurring PR pattern analysis**:
+            **Pass 4 — Recurring PR pattern analysis and workflow health**:
             List recent merged PRs:
               gh pr list --state merged --limit 20 --json number,title,body
+            Check recent workflow run history to spot systematic failures:
+              gh run list --limit 50 --json workflowName,conclusion,createdAt
             Look for:
             - Patterns of similar manual changes that should be automated
             - Recurring review comments that indicate a missing lint or check step
             - PRs that took many iterations — could a better prompt or pre-check have helped?
             - Any failure patterns in CI that the factory itself could detect proactively
+            - Workflows with a high failure rate (e.g., claude-pr-shepherd.yml or claude-proactive.yml
+              failing systematically), which may indicate a broken trigger, permission gap, or config issue
 
             For each concrete finding across all four passes, file an issue:
               gh issue create --title "..." --body "...specific file, line or behavior, current state, desired improvement...\n\n@claude please implement this"
