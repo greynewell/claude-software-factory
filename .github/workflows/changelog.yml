@@ -23,6 +23,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+          token: ${{ secrets.GH_WORKFLOW_TOKEN }}
 
       - name: Update CHANGELOG.md
         uses: anthropics/claude-code-action@v1
