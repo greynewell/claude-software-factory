@@ -31,7 +31,7 @@ jobs:
             You are a PR shepherd for the repo ${{ github.repository }}.
 
             List all open, non-draft PRs:
-              gh pr list --repo ${{ github.repository }} --state open --json number,title,isDraft,mergeable
+              gh pr list --repo ${{ github.repository }} --state open --json number,title,isDraft,mergeable,labels
 
             For each non-draft PR:
             1. Check CI: gh pr checks <number> --repo ${{ github.repository }}
@@ -77,6 +77,7 @@ jobs:
                  Otherwise (no such comment exists, OR the comment predates the latest commit), post a comment and skip to the next PR:
                    printf '@claude the automated merge failed with:\n%s\nPlease investigate and push a fix or manually merge.' "${merge_output}" > /tmp/merge_error_body.txt
                    gh pr comment <number> --repo ${{ github.repository }} --body-file /tmp/merge_error_body.txt
+            Label guard (applies to steps 5 and 6 only): The labels field from the PR list is an array of objects, each with a "name" field. If none of the label objects has name equal to "claude-task", skip steps 5 and 6 and move to the next PR.
             5. If reviewDecision is CHANGES_REQUESTED, post a comment:
                gh pr comment <number> --repo ${{ github.repository }} --body "@claude please address the review feedback and push an update"
             6. If reviewDecision is null or REVIEW_REQUIRED:
