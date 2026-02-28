@@ -24,7 +24,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          allowed_bots: "claude[bot],github-actions[bot]"
+          allowed_bots: "claude[bot],github-actions[bot],dependabot[bot]"
           claude_args: '--allowedTools "Bash(gh pr view:*),Bash(gh api:*),Read,Glob,Grep"'
           prompt: |
             Review this pull request for:
