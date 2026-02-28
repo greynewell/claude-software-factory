@@ -50,11 +50,13 @@ jobs:
             - CLAUDE.md instructions that are unclear or missing
 
             Also check the real-world health of the factory loop by running:
-              gh pr list --repo ${{ github.repository }} --state open --json number,title,createdAt,reviewDecision
+              gh pr list --repo ${{ github.repository }} --state open --json number,title,createdAt,updatedAt,reviewDecision
             Flag and file an issue for each of the following (if no open issue already covers it):
             - Any PR that has been open > 2 days without a review decision (scanner is blind or
               the review workflow is broken)
-            - Any PR whose reviewDecision is APPROVED but has not been merged (shepherd may be stuck)
+            - Any PR whose reviewDecision is APPROVED but has not been merged AND whose updatedAt
+              is more than 2 hours ago (7200 seconds before current time); skip recently-approved
+              PRs to avoid false positives while the shepherd completes its next cycle
 
             **Pass 2 — General codebase issues**:
             - Logic errors, race conditions, unhandled exceptions
