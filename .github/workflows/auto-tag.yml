@@ -95,7 +95,14 @@ jobs:
           # without the changelog commit and file a notification issue.
           CHANGELOG_PUSHED=true
           if git pull --rebase origin main; then
-            git push origin main
+            if git push origin main; then
+              : # success
+            else
+              echo "::warning::git push origin main failed; aborting and tagging HEAD without changelog update"
+              # Undo the changelog commit so we tag the original HEAD
+              git reset --hard HEAD~1
+              CHANGELOG_PUSHED=false
+            fi
           else
             echo "::warning::git pull --rebase failed; aborting and tagging HEAD without changelog update"
             git rebase --abort 2>/dev/null || true
@@ -114,10 +121,10 @@ jobs:
 
           # Notify if changelog was skipped so a human can update it manually
           if [ "$CHANGELOG_PUSHED" = "false" ]; then
-            ISSUE_BODY=$(printf 'The `auto-tag` workflow tagged and released `%s` but could not update `CHANGELOG.md` because `git pull --rebase origin main` failed (a concurrent push likely landed on `main` during the workflow run).\n\nThe tag and GitHub release were created from the original HEAD. Please update `CHANGELOG.md` manually or trigger the `changelog.yml` workflow.\n\nWorkflow run: %s/%s/actions/runs/%s' \
+            ISSUE_BODY=$(printf 'The `auto-tag` workflow tagged and released `%s` but could not update `CHANGELOG.md` because pushing the changelog commit to `main` failed (a concurrent push or transient network error may have occurred during the workflow run).\n\nThe tag and GitHub release were created from the original HEAD. Please update `CHANGELOG.md` manually or trigger the `changelog.yml` workflow.\n\nWorkflow run: %s/%s/actions/runs/%s' \
               "$NEW_TAG" "${{ github.server_url }}" "${{ github.repository }}" "${{ github.run_id }}")
             gh issue create \
-              --title "Changelog skipped for ${NEW_TAG}: rebase conflict on main" \
+              --title "Changelog skipped for ${NEW_TAG}: failed to push changelog to main" \
               --body "$ISSUE_BODY" \
               || echo "::warning::Failed to create notification issue"
           fi
