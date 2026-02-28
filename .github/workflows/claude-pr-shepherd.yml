@@ -67,12 +67,16 @@ jobs:
                Run the merge command, capturing both output and exit code:
                  merge_output=$(gh pr merge <number> --repo ${{ github.repository }} --rebase --delete-branch 2>&1); merge_exit=$?
                If merge_exit is non-zero (the merge command failed):
-                 Before posting, check for duplicate failure comments:
-                 Run: gh api repos/${{ github.repository }}/issues/<number>/comments --jq '.[].body'
-                 If any existing comment body contains the phrase "automated merge failed", skip to the next PR without posting.
-                 Otherwise post a comment and skip to the next PR:
-                 printf '@claude the automated merge failed with:\n%s\nPlease investigate and push a fix or manually merge.' "${merge_output}" > /tmp/merge_error_body.txt
-                 gh pr comment <number> --repo ${{ github.repository }} --body-file /tmp/merge_error_body.txt
+                 Apply timestamp-aware de-dup:
+                 Get the timestamp of the most recent "automated merge failed" comment:
+                   Run: gh api repos/${{ github.repository }}/issues/<number>/comments --jq '[.[] | select(.body | contains("automated merge failed"))] | max_by(.created_at) | .created_at'
+                   (Returns an ISO timestamp string, or null if no such comment exists)
+                 Get the timestamp of the most recent commit to this PR:
+                   Run: gh pr view <number> --repo ${{ github.repository }} --json commits --jq '.commits[-1].committedDate'
+                 If the most recent "automated merge failed" comment timestamp is non-empty AND is more recent than (or equal to) the last commit timestamp, skip to the next PR without posting (de-dup: already notified for this push).
+                 Otherwise (no such comment exists, OR the comment predates the latest commit), post a comment and skip to the next PR:
+                   printf '@claude the automated merge failed with:\n%s\nPlease investigate and push a fix or manually merge.' "${merge_output}" > /tmp/merge_error_body.txt
+                   gh pr comment <number> --repo ${{ github.repository }} --body-file /tmp/merge_error_body.txt
             5. If reviewDecision is CHANGES_REQUESTED, post a comment:
                gh pr comment <number> --repo ${{ github.repository }} --body "@claude please address the review feedback and push an update"
             6. If reviewDecision is null or REVIEW_REQUIRED:
