@@ -168,8 +168,13 @@ jobs:
           if [ "$CHANGELOG_PUSHED" = "false" ]; then
             ISSUE_BODY=$(printf 'The `auto-tag` workflow tagged and released `%s` but could not update `CHANGELOG.md` because pushing the changelog commit to `main` failed (a concurrent push or transient network error may have occurred during the workflow run).\n\nThe tag and GitHub release were created from the original HEAD. Please update `CHANGELOG.md` manually or trigger the `changelog.yml` workflow.\n\nWorkflow run: %s/%s/actions/runs/%s\n\n@claude please run the changelog.yml workflow for this tag and close this issue once done.' \
               "$NEW_TAG" "$SERVER_URL" "$REPOSITORY" "$RUN_ID")
-            gh issue create \
-              --title "Changelog skipped for ${NEW_TAG}: failed to push changelog to main" \
-              --body "$ISSUE_BODY" \
-              || echo "::warning::Failed to create notification issue"
+            EXISTING=$(gh issue list --repo "$REPOSITORY" --state open --search "Changelog skipped" --json number --jq length)
+            if [ "$EXISTING" -gt 0 ]; then
+              echo "Open 'Changelog skipped' issue already exists; skipping duplicate creation"
+            else
+              gh issue create \
+                --title "Changelog skipped for ${NEW_TAG}: failed to push changelog to main" \
+                --body "$ISSUE_BODY" \
+                || echo "::warning::Failed to create notification issue"
+            fi
           fi
