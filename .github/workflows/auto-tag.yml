@@ -31,6 +31,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Guard: for manual dispatch without an explicit ref, we must be on main.
+          # Dispatching from a non-main branch sets github.sha to that branch's HEAD;
+          # the downstream "git push origin main" would then push foreign commits to main.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && \
+             [ -z "${{ github.event.inputs.ref }}" ] && \
+             [ "${{ github.ref_name }}" != "main" ]; then
+            echo "::error::workflow_dispatch must be triggered from main or with an explicit ref input"
+            exit 1
+          fi
+
           # Skip if this is an automated changelog update to prevent recursive triggering
           HEAD_MSG=$(git log -1 --pretty=%s)
           if echo "$HEAD_MSG" | grep -qE "^chore: update changelog"; then
