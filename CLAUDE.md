@@ -17,6 +17,13 @@ gh pr create \
   --head <branch>
 ```
 
+The PR `--body` must include `Closes #<issue-number>` so GitHub auto-closes the originating
+issue on merge. Example body footer:
+
+```
+Closes #42
+```
+
 Always run this as the final step. The PR must exist before marking the task complete.
 
 ## Issues
