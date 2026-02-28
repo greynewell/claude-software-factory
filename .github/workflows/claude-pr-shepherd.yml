@@ -63,7 +63,8 @@ jobs:
                - If mergeable is null: GitHub has not yet computed mergeability — skip this PR silently and wait for the next shepherd run — do not post a comment.
                - If CI is not passing: skip (step 1 handles notifications).
                - If reviewDecision is not APPROVED: skip (steps 5–6 handle notifications).
-               If all pre-checks pass (mergeable is true, CI passes, reviewDecision is APPROVED), merge:
+               - If none of the label objects in the labels array has name equal to "claude-task": skip to the next PR — do not merge, do not comment.
+               If all pre-checks pass (mergeable is true, CI passes, reviewDecision is APPROVED, and PR has the claude-task label), merge:
                Run the merge command, capturing both output and exit code:
                  merge_output=$(gh pr merge <number> --repo ${{ github.repository }} --rebase --delete-branch 2>&1); merge_exit=$?
                If merge_exit is non-zero (the merge command failed):
