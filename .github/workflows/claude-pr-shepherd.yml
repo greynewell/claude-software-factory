@@ -55,6 +55,15 @@ jobs:
                gh pr merge <number> --repo ${{ github.repository }} --rebase --delete-branch
             5. If reviewDecision is CHANGES_REQUESTED, post a comment:
                gh pr comment <number> --repo ${{ github.repository }} --body "@claude please address the review feedback and push an update"
-            6. If reviewDecision is null or REVIEW_REQUIRED, skip and wait for the review workflow to complete
+            6. If reviewDecision is null or REVIEW_REQUIRED:
+               a. Check when the PR was last updated: gh pr view <number> --repo ${{ github.repository }} --json updatedAt
+               b. Compute the age in seconds: updated_seconds=$(date -d "<updatedAt value>" +%s 2>/dev/null || date -jf "%Y-%m-%dT%H:%M:%SZ" "<updatedAt value>" +%s); now=$(date +%s); age=$((now - updated_seconds))
+               c. If age is greater than 7200 (2 hours):
+                  - Check for duplicate comments to avoid spamming:
+                    gh api repos/${{ github.repository }}/issues/<number>/comments --jq '.[].body'
+                  - If any existing comment body contains the phrase "please review this PR", skip to the next PR without posting.
+                  - Otherwise post a comment to re-trigger the review workflow:
+                    gh pr comment <number> --repo ${{ github.repository }} --body "@claude please review this PR and submit a formal review decision (APPROVE or REQUEST_CHANGES)."
+               d. Otherwise skip and wait for the review workflow to complete
 
             Use --repo ${{ github.repository }} on every gh command.
