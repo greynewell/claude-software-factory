@@ -1,3 +1,8 @@
+## v0.10.0 — 2026-02-28
+
+- fix: address shepherd health check review feedback
+- feat: add shepherd health check to proactive scanner
+
 ## v0.9.13 — 2026-02-28
 
 - fix: add @claude trigger to auto-tag failure notification issue body
