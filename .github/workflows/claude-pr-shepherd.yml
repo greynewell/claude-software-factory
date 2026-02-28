@@ -59,7 +59,8 @@ jobs:
                  Run: gh api repos/${{ github.repository }}/issues/<number>/comments --jq '.[].body'
                  If any existing comment body contains the phrase "automated merge failed", skip to the next PR without posting.
                  Otherwise post a comment and skip to the next PR:
-                 gh pr comment <number> --repo ${{ github.repository }} --body "@claude the automated merge failed with: ${merge_output}. Please investigate and push a fix or manually merge."
+                 printf '@claude the automated merge failed with:\n%s\nPlease investigate and push a fix or manually merge.' "${merge_output}" > /tmp/merge_error_body.txt
+                 gh pr comment <number> --repo ${{ github.repository }} --body-file /tmp/merge_error_body.txt
                If mergeable is null (GitHub has not yet computed mergeability), skip this PR silently and wait for the next shepherd run — do not post a comment.
             5. If reviewDecision is CHANGES_REQUESTED, post a comment:
                gh pr comment <number> --repo ${{ github.repository }} --body "@claude please address the review feedback and push an update"
