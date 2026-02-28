@@ -1,3 +1,7 @@
+## v0.11.1 — 2026-02-28
+
+- fix: add claude-task label guard to merge step in pr-shepherd
+
 ## v0.11.0 — 2026-02-28
 
 - feat: add Bash(gh run list:*) to deep scan allowedTools
