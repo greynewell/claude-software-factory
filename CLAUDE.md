@@ -24,6 +24,14 @@ issue on merge. Example body footer:
 Closes #42
 ```
 
+After creating a PR, apply the `claude-task` label so the stale workflow does not auto-close it:
+
+```
+gh issue edit <PR-number> --repo OWNER/REPO --add-label claude-task
+```
+
+(GitHub treats PRs as issues for the label API, so `gh issue edit` works on PR numbers.)
+
 Always run this as the final step. The PR must exist before marking the task complete.
 
 ## Issues
