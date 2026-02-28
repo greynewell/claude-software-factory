@@ -85,8 +85,16 @@ jobs:
                  Otherwise (no such comment exists, OR the comment predates the latest commit), post a comment and skip to the next PR:
                    printf '@claude the automated merge failed with:\n%s\nPlease investigate and push a fix or manually merge.' "${merge_output}" > /tmp/merge_error_body.txt
                    gh pr comment <number> --repo ${{ github.repository }} --body-file /tmp/merge_error_body.txt
-            5. If reviewDecision is CHANGES_REQUESTED, post a comment:
-               gh pr comment <number> --repo ${{ github.repository }} --body "@claude please address the review feedback and push an update"
+            5. If reviewDecision is CHANGES_REQUESTED, apply a staleness check before posting:
+               Get the timestamp of the most recent CHANGES_REQUESTED review:
+                 Run: gh api repos/${{ github.repository }}/pulls/<number>/reviews --jq '[.[] | select(.state=="CHANGES_REQUESTED")] | max_by(.submitted_at) | .submitted_at'
+                 (Returns an ISO timestamp string, or empty/null if no CHANGES_REQUESTED review exists)
+               Get the timestamp of the most recent commit to this PR:
+                 Run: gh pr view <number> --repo ${{ github.repository }} --json commits --jq '.commits[-1].committedDate'
+               Compare the two timestamps as strings (ISO 8601 UTC strings sort correctly lexicographically).
+               If the CHANGES_REQUESTED review timestamp is less than the latest commit timestamp, the review is stale — skip to the next PR silently (Claude already pushed a fix; step 6 will trigger a re-review after 2h). Do not post a comment.
+               Otherwise (review timestamp is more recent than or equal to the latest commit timestamp), post a comment:
+                 gh pr comment <number> --repo ${{ github.repository }} --body "@claude please address the review feedback and push an update"
             6. If reviewDecision is null or REVIEW_REQUIRED:
                a. Check when the PR was last updated: gh pr view <number> --repo ${{ github.repository }} --json updatedAt
                b. Compute the age in seconds: updated_seconds=$(date -d "<updatedAt value>" +%s 2>/dev/null || date -jf "%Y-%m-%dT%H:%M:%SZ" "<updatedAt value>" +%s); now=$(date +%s); age=$((now - updated_seconds))
