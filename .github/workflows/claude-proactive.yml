@@ -31,7 +31,12 @@ jobs:
             the factory — its workflows are the product. Improving them is the primary goal.
 
             Check existing open issues first to avoid duplicates:
-              gh issue list --state open --limit 50
+              gh issue list --state open --limit 100
+
+            Before filing each issue, also run a targeted keyword search to catch duplicates
+            even when the open issue count exceeds the list limit:
+              gh issue list --state open --search "keyword from proposed title" --limit 10
+            Only file an issue if neither check returns a matching open issue.
 
             Scan in two passes:
 
