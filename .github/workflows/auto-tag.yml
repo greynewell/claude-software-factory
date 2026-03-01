@@ -150,6 +150,21 @@ jobs:
               echo "Changelog PR #${CHANGELOG_PR_NUMBER} created: ${CHANGELOG_PR_URL}"
             else
               echo "::warning::Failed to create changelog PR: ${CHANGELOG_PR_URL}"
+              # A concurrent run may have already created the PR for this branch.
+              # Check before treating this as a failure that requires a notification issue.
+              EXISTING_CHANGELOG_PR=$(gh pr list \
+                --repo "$REPOSITORY" \
+                --head "$CHANGELOG_BRANCH" \
+                --state open \
+                --json number \
+                2>/dev/null | jq -r '.[0].number // empty' 2>/dev/null || true)
+              if [ -n "$EXISTING_CHANGELOG_PR" ]; then
+                echo "Existing changelog PR #${EXISTING_CHANGELOG_PR} found for ${CHANGELOG_BRANCH} — treating as success"
+                gh pr merge "$EXISTING_CHANGELOG_PR" --repo "$REPOSITORY" --squash --auto --delete-branch 2>/dev/null || \
+                  echo "::warning::auto-merge not available for PR #${EXISTING_CHANGELOG_PR}; it will need manual merge"
+                gh issue edit "$EXISTING_CHANGELOG_PR" --repo "$REPOSITORY" --add-label "claude-task" 2>/dev/null || true
+                CHANGELOG_PUSHED=true
+              fi
             fi
           else
             echo "::warning::Failed to push changelog branch ${CHANGELOG_BRANCH}"
