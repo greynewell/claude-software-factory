@@ -96,7 +96,7 @@ jobs:
             Do NOT file a new issue for this — just trigger the workflow (or skip it) and move on.
 
             For each concrete finding across all four passes, file an issue:
-              gh issue create --title "..." --body "...specific file, line or behavior, current state, desired improvement...\n\n@claude please implement this"
+              gh issue create --title "..." --body "...specific file, line or behavior, current state, desired improvement...\n\n@claude please implement this" --label claude-task
 
             File at most 5 issues per run. Prioritize findings that improve the factory loop itself.
             Prefer specific, actionable issues over vague observations.
