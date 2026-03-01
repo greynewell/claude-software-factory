@@ -1,3 +1,8 @@
+## v0.15.1 — 2026-03-01
+
+- fix: add input validation and timestamp suffix to changelog.yml branch name
+- fix: use branch+PR+auto-merge in changelog.yml and batch-changelog.yml
+
 ## v0.11.2 — 2026-02-28
 
 - fix: remove ambiguous label guard note from shepherd prompt
