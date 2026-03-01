@@ -86,10 +86,11 @@ jobs:
                Before creating a branch, check whether an open batch changelog PR already exists
                to avoid duplicate PRs in case the scanner re-triggers before a previous run merges:
                  EXISTING_PR=$(gh pr list --repo ${{ github.repository }} --state open --search "chore: batch update changelog" --json number --jq '.[0].number // empty')
-                 if [ -n "$EXISTING_PR" ]; then
-                   echo "Open batch changelog PR #$EXISTING_PR already exists -- skipping to avoid duplicate"
-                   exit 0
-                 fi
+
+               If EXISTING_PR is non-empty, print "Open batch changelog PR #<EXISTING_PR> already
+               exists — skipping to avoid duplicate" and stop all further processing immediately.
+               Do not create a branch, do not commit, do not push, and do not open a new PR.
+               All remaining steps below are skipped; the task is complete.
 
                Configure git identity, create a changelog branch, commit, push, and open a PR
                with auto-merge enabled. Direct pushes to main are blocked by branch protection
