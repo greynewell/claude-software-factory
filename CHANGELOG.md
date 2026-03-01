@@ -1,3 +1,20 @@
+## v1.0.0 — 2026-03-01
+
+## What's Changed
+* fix: use full commit message format for BREAKING CHANGE footer detection by @greynewell in https://github.com/greynewell/claude-software-factory/pull/214
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v0.16.1...v1.0.0
+
+## v0.16.1 — 2026-03-01
+
+## What's Changed
+* chore: batch update changelog for all skipped releases by @greynewell in https://github.com/greynewell/claude-software-factory/pull/210
+* fix: add concurrency group to batch-changelog.yml to prevent duplicate PRs by @greynewell in https://github.com/greynewell/claude-software-factory/pull/215
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v0.16.0...v0.16.1
+
 ## v0.12.11 — 2026-03-01
 
 ## What's Changed
