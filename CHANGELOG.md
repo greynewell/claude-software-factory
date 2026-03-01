@@ -1,3 +1,7 @@
+## v1.0.2 — 2026-03-01
+
+- fix: add actions:write permission and batch-changelog recovery to weekly scanner
+
 ## v1.0.0 — 2026-03-01
 
 ## What's Changed
