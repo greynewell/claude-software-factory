@@ -10,7 +10,7 @@ permissions:
   pull-requests: read
   issues: write
   id-token: write
-  actions: read
+  actions: write
 
 jobs:
   weekly-deep-scan:
@@ -25,7 +25,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GH_WORKFLOW_TOKEN }}
           allowed_bots: "claude[bot],github-actions[bot]"
-          claude_args: '--allowedTools "Bash(gh issue list:*),Bash(gh issue create:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh run list:*),Bash(gh run view:*),Bash(date:*),Read,Glob,Grep"'
+          claude_args: '--allowedTools "Bash(gh issue list:*),Bash(gh issue create:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh run list:*),Bash(gh run view:*),Bash(gh workflow run batch-changelog.yml:*),Bash(date:*),Read,Glob,Grep"'
           prompt: |
             You are the Claude Software Factory conducting its weekly deep self-improvement scan.
             This repo IS the factory — its workflows are the product. Improving them is the primary goal.
@@ -82,6 +82,14 @@ jobs:
             - Any failure patterns in CI that the factory itself could detect proactively
             - Workflows with a high failure rate (e.g., claude-pr-shepherd.yml or claude-proactive.yml
               failing systematically), which may indicate a broken trigger, permission gap, or config issue
+
+            **Changelog skipped issue recovery**:
+            Check for accumulated "Changelog skipped" issues by running:
+              gh issue list --state open --search "Changelog skipped" --limit 50
+            Count the results. If 2 or more open "Changelog skipped" issues exist, trigger
+            the batch-changelog workflow to resolve them all at once:
+              gh workflow run batch-changelog.yml
+            Do NOT file a new issue for this — just trigger the workflow and move on.
 
             For each concrete finding across all four passes, file an issue:
               gh issue create --title "..." --body "...specific file, line or behavior, current state, desired improvement...\n\n@claude please implement this"
