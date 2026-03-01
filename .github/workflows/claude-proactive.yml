@@ -62,8 +62,23 @@ jobs:
               failing — investigate broken shepherd") instead of per-PR stuck issues.
             - Do NOT file per-PR stuck issues when the shepherd is globally broken; those would
               only add noise while the root cause is the broken shepherd.
-            If at least one recent shepherd run succeeded, the shepherd is healthy. In that case,
-            check stuck PRs by running:
+
+            Next, check code review workflow health:
+              gh run list --workflow=claude-code-review.yml --limit 5 --json conclusion,startedAt
+            If the command returns an empty array (no results), the code review workflow has no run
+            history — treat it as healthy and proceed directly to per-PR stuck logic below.
+            If every one of the 5 most recent code review runs has conclusion "failure" or "cancelled"
+            (i.e. no successful run exists), the code review workflow itself is broken. In that case:
+            - Before filing, check for an existing code review health issue:
+                gh issue list --state open --search "claude-code-review" --limit 10
+              Only file ONE issue if no matching open issue already exists.
+            - File ONE issue about code review health (e.g. "claude-code-review.yml: all recent runs
+              failing — investigate broken reviewer") instead of per-PR stuck issues.
+            - Do NOT file per-PR stuck issues when the reviewer is globally broken; those would
+              only add noise while the root cause is the broken reviewer.
+
+            If at least one recent shepherd run succeeded AND at least one recent code review run
+            succeeded (both are healthy), check stuck PRs by running:
               gh pr list --repo ${{ github.repository }} --state open --json number,title,createdAt,updatedAt,reviewDecision
             Flag and file an issue for each of the following (if no open issue already covers it):
             - Any PR that has been open > 2 days without a review decision (scanner is blind or
