@@ -34,8 +34,7 @@ jobs:
               gh pr list --repo ${{ github.repository }} --state open --limit 100 --json number,title,isDraft,mergeable,labels
 
             For each non-draft PR:
-            1. Check CI: gh pr checks <number> --repo ${{ github.repository }}
-               Evaluate the output carefully before proceeding:
+            1. Check CI: Run gh pr checks <number> --repo ${{ github.repository }} and evaluate the output carefully before proceeding:
                - If the output is empty (no checks listed), CI has not started yet → SKIP this PR entirely, do not merge
                - If any check shows a status of "pending" or "in_progress", CI is still running → SKIP this PR, do not merge
                - If any check shows a status of "fail" or "cancelled", CI has failed → do NOT merge; instead apply timestamp-aware de-dup:
@@ -45,8 +44,10 @@ jobs:
                  Get the timestamp of the most recent commit to this PR:
                    Run: gh pr view <number> --repo ${{ github.repository }} --json commits --jq '.commits[-1].committedDate'
                  If the most recent "CI checks are failing" comment timestamp is non-empty AND is more recent than (or equal to) the last commit timestamp, skip to the next PR without posting (de-dup: already notified for this push).
-                 Otherwise (no such comment exists, OR the comment predates the latest commit), post a comment and skip to the next PR:
-                   gh pr comment <number> --repo ${{ github.repository }} --body "@claude CI checks are failing on this PR. Please review the failed checks and push a fix."
+                 Otherwise (no such comment exists, OR the comment predates the latest commit), extract the failing check names and post a comment:
+                   failing_checks=$(gh pr checks <number> --repo ${{ github.repository }} --json name,state --jq '[.[] | select(.state == "fail" or .state == "cancelled") | "- \(.name) (\(.state))"] | join("\n")')
+                   printf '@claude CI checks are failing on this PR. Failing checks:\n%s\nPlease review the failed checks and push a fix.' "${failing_checks}" > /tmp/ci_failure_body.txt
+                   gh pr comment <number> --repo ${{ github.repository }} --body-file /tmp/ci_failure_body.txt
                - Checks with status "skipping", "skipped", or "neutral" are non-blocking — treat them as passing
                - CI passes when: at least one check is present, no check shows "fail" or "cancelled", and every non-skipped check shows "pass" or "success"
             2. Check review status: gh pr view <number> --repo ${{ github.repository }} --json reviewDecision,mergeable
