@@ -111,9 +111,9 @@ jobs:
             Count the results. If 2 or more open "Changelog skipped" issues exist, first
             check whether a batch-changelog run is already queued or in progress:
               gh run list --workflow=batch-changelog.yml --json status --limit 10
-            Inspect the returned JSON. If any entry has status "queued" or "in_progress",
+            Inspect the returned JSON. If any entry has status "queued", "in_progress", or "waiting",
             a run is already in flight — skip the trigger entirely and move on.
-            Only if no queued or in_progress runs exist, trigger the workflow:
+            Only if no queued, in_progress, or waiting runs exist, trigger the workflow:
               gh workflow run batch-changelog.yml
             Do NOT file a new issue for this — just trigger the workflow (or skip it) and move on.
 
