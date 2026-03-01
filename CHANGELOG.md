@@ -1,3 +1,8 @@
+## v1.0.13 — 2026-03-01
+
+- fix: skip APPROVED stuck-PR check when CI is failing or in-progress
+- chore: batch update changelog for all skipped releases
+
 ## v1.0.12 — 2026-03-01
 
 ## What's Changed
