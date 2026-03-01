@@ -124,24 +124,28 @@ jobs:
           git commit -m "chore: update changelog for ${NEW_TAG}"
 
           # Try to sync with origin/main and push the changelog commit.
-          # If a concurrent push caused a conflict, fall back to tagging HEAD
-          # without the changelog commit and file a notification issue.
-          CHANGELOG_PUSHED=true
-          if git pull --rebase origin main; then
-            if git push origin main; then
-              : # success
-            else
-              echo "::warning::git push origin main failed; aborting and tagging HEAD without changelog update"
-              # Undo the changelog commit so we tag the original HEAD
-              git reset --hard HEAD~1
-              CHANGELOG_PUSHED=false
+          # Retry up to 3 times with a 5-second delay to absorb concurrent
+          # push races (e.g. multiple PRs merging in rapid succession).
+          CHANGELOG_PUSHED=false
+          ORIG_MAIN_HEAD=$(git rev-parse HEAD~1)
+          cp CHANGELOG.md /tmp/CHANGELOG.md.new
+          for ATTEMPT in 1 2 3; do
+            if git pull --rebase origin main && git push origin main; then
+              CHANGELOG_PUSHED=true
+              break
             fi
-          else
-            echo "::warning::git pull --rebase failed; aborting and tagging HEAD without changelog update"
+            echo "::warning::Attempt $ATTEMPT of 3: failed to push changelog commit to origin/main"
             git rebase --abort 2>/dev/null || true
-            # Undo the changelog commit so we tag the original HEAD
-            git reset --hard HEAD~1
-            CHANGELOG_PUSHED=false
+            git reset --hard "$ORIG_MAIN_HEAD"
+            if [ "$ATTEMPT" -lt 3 ]; then
+              cp /tmp/CHANGELOG.md.new CHANGELOG.md
+              git add CHANGELOG.md
+              git commit -m "chore: update changelog for ${NEW_TAG}"
+              sleep 5
+            fi
+          done
+          if [ "$CHANGELOG_PUSHED" = "false" ]; then
+            echo "::warning::All 3 attempts failed to push changelog commit to origin/main; tagging HEAD without changelog update"
           fi
 
           # Idempotency guard: exit cleanly if a concurrent run already pushed this tag.
