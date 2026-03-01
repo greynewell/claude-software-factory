@@ -151,6 +151,18 @@ jobs:
             fi
           else
             echo "::warning::Failed to push changelog branch ${CHANGELOG_BRANCH}"
+            # A concurrent run may have already pushed this branch and created the PR.
+            # Check before treating this as a failure that requires a notification issue.
+            EXISTING_CHANGELOG_PR=$(gh pr list \
+              --repo "$REPOSITORY" \
+              --head "$CHANGELOG_BRANCH" \
+              --state open \
+              --json number \
+              2>/dev/null | jq -r '.[0].number // empty' 2>/dev/null || true)
+            if [ -n "$EXISTING_CHANGELOG_PR" ]; then
+              echo "Concurrent run already created changelog PR #${EXISTING_CHANGELOG_PR} for ${CHANGELOG_BRANCH} — treating as success"
+              CHANGELOG_PUSHED=true
+            fi
           fi
 
           # Return to the original merge commit for tagging
