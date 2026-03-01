@@ -1,3 +1,8 @@
+## v1.0.3 — 2026-03-01
+
+- fix: handle TOCTOU race in auto-tag git push with proper error handling
+- chore: batch update changelog for all skipped releases
+
 ## v1.0.2 — 2026-03-01
 
 ## What's Changed
