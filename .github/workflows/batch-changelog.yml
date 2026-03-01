@@ -12,6 +12,10 @@ on:
         type: boolean
         default: false
 
+concurrency:
+  group: batch-changelog
+  cancel-in-progress: false
+
 permissions:
   contents: write
   id-token: write
@@ -35,7 +39,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GH_WORKFLOW_TOKEN }}
           allowed_bots: "claude[bot],github-actions[bot]"
-          claude_args: '--allowedTools "Bash(gh issue list:*),Bash(gh issue close:*),Bash(gh issue edit:*),Bash(gh release view:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git config:*),Bash(git pull:*),Bash(git checkout:*),Bash(gh pr create:*),Bash(gh pr merge:*),Read,Write(CHANGELOG.md),Edit(CHANGELOG.md)"'
+          claude_args: '--allowedTools "Bash(gh issue list:*),Bash(gh issue close:*),Bash(gh issue edit:*),Bash(gh label create:*),Bash(gh release view:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git config:*),Bash(git pull:*),Bash(git checkout:*),Bash(gh pr create:*),Bash(gh pr merge:*),Bash(gh pr list:*),Bash(date:*),Read,Write(CHANGELOG.md),Edit(CHANGELOG.md)"'
           prompt: |
             Batch-update CHANGELOG.md for all open "Changelog skipped" issues.
 
@@ -47,8 +51,13 @@ jobs:
                  gh issue list --state open --search "Changelog skipped for" --json number,title --jq '.[] | "\(.number)|\(.title)"'
 
                For each result, extract the tag name from the issue title. The title format is:
-                 "Changelog skipped for <tag_name>"
-               Parse the tag by taking everything after "Changelog skipped for ".
+                 "Changelog skipped for <tag_name>: <reason>"
+               Parse the tag by taking the token immediately after "Changelog skipped for " and
+               before the first colon. For example, from the title
+               "Changelog skipped for v1.0.2: failed to push changelog to main", extract "v1.0.2".
+
+               Store the collected issue numbers (space-separated) in ISSUE_NUMBERS and the
+               corresponding tag names in TAGS for use in later steps.
 
             2. If no matching issues are found, print "No open Changelog-skipped issues found." and stop.
 
@@ -74,6 +83,15 @@ jobs:
             6. Prepend all new entries to CHANGELOG.md, with a blank line between each entry
                and between the new entries and any existing content. Write the updated file.
 
+               Before creating a branch, check whether an open batch changelog PR already exists
+               to avoid duplicate PRs in case the scanner re-triggers before a previous run merges:
+                 EXISTING_PR=$(gh pr list --repo ${{ github.repository }} --state open --search "chore: batch update changelog" --json number --jq '.[0].number // empty')
+
+               If EXISTING_PR is non-empty, print "Open batch changelog PR #<EXISTING_PR> already
+               exists — skipping to avoid duplicate" and stop all further processing immediately.
+               Do not create a branch, do not commit, do not push, and do not open a new PR.
+               All remaining steps below are skipped; the task is complete.
+
                Configure git identity, create a changelog branch, commit, push, and open a PR
                with auto-merge enabled. Direct pushes to main are blocked by branch protection
                rules, so this follows the same pattern as auto-tag.yml:
@@ -84,19 +102,25 @@ jobs:
                  git add CHANGELOG.md
                  git commit -m "chore: batch update changelog for all skipped releases"
                  git push origin "$CHANGELOG_BRANCH"
+                 CLOSES_LINES=$(for num in $ISSUE_NUMBERS; do echo "Closes #$num"; done)
+                 PR_BODY=$(printf "Automated batch changelog update. Direct pushes to main are blocked by branch protection rules.\n\n%s" "$CLOSES_LINES")
                  PR_URL=$(gh pr create \
                    --repo ${{ github.repository }} \
                    --title "chore: batch update changelog for all skipped releases [skip ci]" \
-                   --body "Automated batch changelog update. Direct pushes to main are blocked by branch protection rules." \
+                   --body "$PR_BODY" \
                    --base main \
                    --head "$CHANGELOG_BRANCH")
                  PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
-                 gh pr merge "$PR_NUMBER" --repo ${{ github.repository }} --squash --auto
+                 gh pr merge "$PR_NUMBER" --repo ${{ github.repository }} --squash --auto --delete-branch
+                 gh label create claude-task --description 'Assigned to Claude for implementation' --color 7057ff 2>/dev/null || true
                  gh issue edit "$PR_NUMBER" --repo ${{ github.repository }} --add-label "claude-task"
 
-            7. After the PR is created (or if an entry already existed in step 5a), close each
-               matching issue with a comment:
-                 gh issue close <number> --comment "Resolved: changelog entry will be merged via PR."
+            7. Do NOT manually close the issues when a PR was created. The "Closes #<N>" entries
+               in the PR body (added in step 6) will cause GitHub to auto-close them when the PR
+               merges. If the PR is closed without merging, the issues remain open for the
+               scanner to retry.
 
-            If no new entries were needed (all tags already had entries), still close any
-            matching issues and skip the git commit step.
+               Exception — if no new entries were needed (all tags already had entries in
+               CHANGELOG.md), no PR is created, so close each matching issue manually and skip
+               the git commit step:
+                 gh issue close <number> --comment "Resolved: changelog entry already exists in CHANGELOG.md."
