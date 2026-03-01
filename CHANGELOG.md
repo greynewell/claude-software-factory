@@ -1,3 +1,7 @@
+## v1.1.8 — 2026-03-01
+
+- fix: add waiting to in-flight status check for batch-changelog runs
+
 ## v1.1.5 — 2026-03-01
 
 <!-- Release notes generated using configuration in .github/release.yml at v1.1.5 -->
