@@ -86,6 +86,10 @@ jobs:
             - Any PR whose reviewDecision is APPROVED but has not been merged AND whose updatedAt
               is more than 2 hours ago (7200 seconds before current time); skip recently-approved
               PRs to avoid false positives while the shepherd completes its next cycle
+            - Any PR whose reviewDecision is CHANGES_REQUESTED and has been open > 2 days (the
+              shepherd's CHANGES_REQUESTED handling may be broken — see issues #41 and #193);
+              include the PR number, title, age in days, and links to issues #41 and #193 in the
+              filed issue body
 
             **Pass 2 — General codebase issues**:
             - Logic errors, race conditions, unhandled exceptions
