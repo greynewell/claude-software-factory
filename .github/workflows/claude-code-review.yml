@@ -31,17 +31,48 @@ jobs:
             1. Correctness and logic errors
             2. Security vulnerabilities
             3. Breaking changes
-
-            Post review comments inline on the diff using the GitHub API.
-            Be concise. Focus on significant issues only.
             # CUSTOMIZE: Add stack-specific review criteria here
 
-            After posting inline comments, submit a formal review decision using the GitHub API.
-            Determine whether blocking issues were found (significant bugs, security vulnerabilities, or breaking changes).
-            If no blocking issues:
-              gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews --method POST --field body='LGTM' --field event=APPROVE
-            If blocking issues found:
-              gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews --method POST --field body='Changes required: [summarize issues]' --field event=REQUEST_CHANGES
-            Only use REQUEST_CHANGES for significant bugs, security vulnerabilities, or breaking changes. Use APPROVE for minor issues, style comments, or suggestions.
+            ## Review Process (follow these steps in order)
+
+            **Step 1 – Fetch the diff:**
+            Retrieve changed files and diff hunks using:
+              gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files
+
+            **Step 2 – Analyse completely, collect findings internally:**
+            Review every changed file. Note each issue with its file path and line number.
+            Do NOT make any GitHub API calls at this stage.
+
+            **Step 3 – Submit a single atomic review:**
+            Post exactly one call to the reviews API that embeds both the review decision and all
+            inline comments in the same request. This is critical: posting comments atomically with
+            the review decision ensures no orphaned comments are left if the job is cancelled.
+
+            Build a JSON payload and submit it via:
+              gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews \
+                --method POST --input review.json
+
+            The JSON payload must have this shape:
+              {
+                "body": "<overall review summary>",
+                "event": "<APPROVE or REQUEST_CHANGES>",
+                "comments": [
+                  {
+                    "path": "<file path relative to repo root>",
+                    "line": <line number in the file>,
+                    "side": "RIGHT",
+                    "body": "<comment text>"
+                  }
+                ]
+              }
+
+            For added or changed lines use side "RIGHT"; for removed lines use side "LEFT".
+            Omit the "comments" key entirely when there are no inline comments.
+
+            Determine the event value:
+            - Use APPROVE when no blocking issues exist (minor issues, style, and suggestions → APPROVE).
+            - Use REQUEST_CHANGES only for significant bugs, security vulnerabilities, or breaking changes.
+
+            Be concise. Focus on significant issues only.
           # CUSTOMIZE: Restrict to read-only tools
           # claude_args: "--allowedTools Bash(go vet ./...),Bash(go test ./...)"
