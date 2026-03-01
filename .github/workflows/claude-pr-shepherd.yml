@@ -26,7 +26,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GH_WORKFLOW_TOKEN }}
           allowed_bots: "claude[bot],github-actions[bot]"
-          claude_args: '--allowedTools "Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh pr merge:*),Bash(gh pr comment:*),Bash(gh pr review:*),Bash(gh api:*),Bash(gh issue:*),Bash(git fetch:*),Bash(git log:*),Bash(git diff:*),Bash(git status:*),Read,Glob,Grep"'
+          claude_args: '--allowedTools "Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh pr merge:*),Bash(gh pr comment:*),Bash(gh pr review:*),Bash(gh api:*),Bash(gh issue:*),Bash(gh workflow run:*),Bash(git fetch:*),Bash(git log:*),Bash(git diff:*),Bash(git status:*),Read,Glob,Grep"'
           prompt: |
             You are a PR shepherd for the repo ${{ github.repository }}.
 
@@ -73,7 +73,15 @@ jobs:
                    (Returns an ISO 8601 timestamp string, or empty/null if no APPROVED review exists)
                  Get the most recent commit timestamp:
                    Run: gh pr view <number> --repo ${{ github.repository }} --json commits --jq '.commits[-1].committedDate'
-                 Compare the two timestamps as strings (ISO 8601 UTC strings sort correctly lexicographically). If the approval timestamp is less than the commit timestamp, the approval predates the latest commit — skip this PR silently (a new review run should be in flight or will be triggered by step 6). Do not post a comment.
+                 Compare the two timestamps as strings (ISO 8601 UTC strings sort correctly lexicographically). If the approval timestamp is less than the commit timestamp, the approval predates the latest commit — do NOT merge. Instead, apply re-review logic:
+                  Get the PR head branch: pr_branch=$(gh pr view <number> --repo ${{ github.repository }} --json headRefName --jq '.headRefName')
+                  Check for a pending or in-progress code-review run on this branch:
+                    in_progress=$(gh api "repos/${{ github.repository }}/actions/workflows/claude-code-review.yml/runs?branch=${pr_branch}&status=in_progress&per_page=5" --jq '.total_count')
+                    queued=$(gh api "repos/${{ github.repository }}/actions/workflows/claude-code-review.yml/runs?branch=${pr_branch}&status=queued&per_page=5" --jq '.total_count')
+                  If in_progress > 0 or queued > 0, skip to the next PR (de-dup: a review run is already in flight).
+                  Otherwise, check the PR age (updatedAt as in step 6b). If age > 7200 seconds, trigger:
+                    gh workflow run claude-code-review.yml --repo ${{ github.repository }} --ref "$pr_branch" -f pr_number=<number>
+                  Skip to the next PR. Do not post a comment.
                If all pre-checks pass (mergeable is true, CI passes, reviewDecision is APPROVED, approval is not stale, and PR has the claude-task label), merge:
                Run the merge command, capturing both output and exit code:
                  merge_output=$(gh pr merge <number> --repo ${{ github.repository }} --rebase --delete-branch 2>&1); merge_exit=$?
@@ -88,28 +96,39 @@ jobs:
                  Otherwise (no such comment exists, OR the comment predates the latest commit), post a comment and skip to the next PR:
                    printf '@claude the automated merge failed with:\n%s\nPlease investigate and push a fix or manually merge.' "${merge_output}" > /tmp/merge_error_body.txt
                    gh pr comment <number> --repo ${{ github.repository }} --body-file /tmp/merge_error_body.txt
-            5. If reviewDecision is CHANGES_REQUESTED, apply a staleness check before posting:
-               Get the timestamp of the most recent CHANGES_REQUESTED review:
-                 Run: gh api repos/${{ github.repository }}/pulls/<number>/reviews --jq '[.[] | select(.state=="CHANGES_REQUESTED")] | max_by(.submitted_at) | .submitted_at'
-                 (Returns an ISO timestamp string, or empty/null if no CHANGES_REQUESTED review exists)
-               Get the timestamp of the most recent commit to this PR:
-                 Run: gh pr view <number> --repo ${{ github.repository }} --json commits --jq '.commits[-1].committedDate'
-               Compare the two timestamps as strings (ISO 8601 UTC strings sort correctly lexicographically).
-               If the CHANGES_REQUESTED review timestamp is less than the latest commit timestamp, the review is stale — skip to the next PR silently (Claude already pushed a fix; step 6 will trigger a re-review after 2h). Do not post a comment.
-               Otherwise (review timestamp is more recent than or equal to the latest commit timestamp), post a comment:
-                 gh pr comment <number> --repo ${{ github.repository }} --body "@claude please address the review feedback and push an update"
+            5. If reviewDecision is CHANGES_REQUESTED:
+               a. Get the timestamp of the most recent CHANGES_REQUESTED review:
+                    Run: gh api repos/${{ github.repository }}/pulls/<number>/reviews --jq '[.[] | select(.state=="CHANGES_REQUESTED")] | max_by(.submitted_at) | .submitted_at'
+                    (Returns an ISO timestamp string, or empty/null if no CHANGES_REQUESTED review exists)
+               b. Get the timestamp of the most recent commit to this PR:
+                    Run: gh pr view <number> --repo ${{ github.repository }} --json commits --jq '.commits[-1].committedDate'
+               c. Compare the two timestamps as strings (ISO 8601 UTC strings sort correctly lexicographically).
+               d. If the CHANGES_REQUESTED review timestamp is less than the latest commit timestamp (stale — Claude already pushed a fix), apply re-review logic:
+                    Get the PR head branch: pr_branch=$(gh pr view <number> --repo ${{ github.repository }} --json headRefName --jq '.headRefName')
+                    Check for a pending or in-progress code-review run on this branch:
+                      in_progress=$(gh api "repos/${{ github.repository }}/actions/workflows/claude-code-review.yml/runs?branch=${pr_branch}&status=in_progress&per_page=5" --jq '.total_count')
+                      queued=$(gh api "repos/${{ github.repository }}/actions/workflows/claude-code-review.yml/runs?branch=${pr_branch}&status=queued&per_page=5" --jq '.total_count')
+                    If in_progress > 0 or queued > 0, skip to the next PR (de-dup: a review run is already in flight).
+                    Otherwise, check the PR age (updatedAt as in step 6b). If age > 7200 seconds, trigger:
+                      gh workflow run claude-code-review.yml --repo ${{ github.repository }} --ref "$pr_branch" -f pr_number=<number>
+                    Skip to the next PR.
+               e. Otherwise (review is fresh — review timestamp >= commit timestamp), apply timestamp-aware de-dup before posting:
+                    Get the timestamp of the most recent "please address the review feedback" comment:
+                      Run: gh api repos/${{ github.repository }}/issues/<number>/comments --jq '[.[] | select(.body | contains("please address the review feedback"))] | max_by(.created_at) | .created_at'
+                      (Returns an ISO timestamp string, or null if no such comment exists)
+                    If that timestamp is non-empty AND is more recent than (or equal to) the CHANGES_REQUESTED review timestamp, skip to the next PR without posting (de-dup: already notified since the current review).
+                    Otherwise post: gh pr comment <number> --repo ${{ github.repository }} --body "@claude please address the review feedback and push an update"
             6. If reviewDecision is null or REVIEW_REQUIRED:
                a. Check when the PR was last updated: gh pr view <number> --repo ${{ github.repository }} --json updatedAt
                b. Compute the age in seconds: updated_seconds=$(date -d "<updatedAt value>" +%s 2>/dev/null || date -jf "%Y-%m-%dT%H:%M:%SZ" "<updatedAt value>" +%s); now=$(date +%s); age=$((now - updated_seconds))
                c. If age is greater than 7200 (2 hours):
-                  - Get the timestamp of the most recent "please review this PR" comment:
-                    Run: gh api repos/${{ github.repository }}/issues/<number>/comments --jq '[.[] | select(.body | contains("please review this PR"))] | max_by(.created_at) | .created_at'
-                    (Returns an ISO timestamp string, or null if no such comment exists)
-                  - Get the timestamp of the most recent commit to this PR:
-                    Run: gh pr view <number> --repo ${{ github.repository }} --json commits --jq '.commits[-1].committedDate'
-                  - If the most recent "please review this PR" comment timestamp is non-empty AND is more recent than (or equal to) the last commit timestamp, skip to the next PR without posting (de-dup: the existing trigger was already posted after the latest push).
-                  - Otherwise (no such comment exists, OR the comment predates the latest commit push), post a comment to re-trigger the review workflow:
-                    gh pr comment <number> --repo ${{ github.repository }} --body "@claude please review this PR and submit a formal review decision (APPROVE or REQUEST_CHANGES)."
+                  - Get the PR head branch: pr_branch=$(gh pr view <number> --repo ${{ github.repository }} --json headRefName --jq '.headRefName')
+                  - Check for a pending or in-progress code-review run on this branch:
+                      in_progress=$(gh api "repos/${{ github.repository }}/actions/workflows/claude-code-review.yml/runs?branch=${pr_branch}&status=in_progress&per_page=5" --jq '.total_count')
+                      queued=$(gh api "repos/${{ github.repository }}/actions/workflows/claude-code-review.yml/runs?branch=${pr_branch}&status=queued&per_page=5" --jq '.total_count')
+                  - If in_progress > 0 or queued > 0, skip to the next PR (de-dup: a review run is already in flight).
+                  - Otherwise trigger the review workflow directly (avoids invoking the implementation bot):
+                      gh workflow run claude-code-review.yml --repo ${{ github.repository }} --ref "$pr_branch" -f pr_number=<number>
                d. Otherwise skip and wait for the review workflow to complete
 
             Use --repo ${{ github.repository }} on every gh command.
