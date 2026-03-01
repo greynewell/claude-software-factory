@@ -25,7 +25,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GH_WORKFLOW_TOKEN }}
           allowed_bots: "claude[bot],github-actions[bot]"
-          claude_args: '--allowedTools "Bash(gh api repos/*/pulls/*/reviews:*),Bash(gh issue list:*),Bash(gh issue create:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh run list:*),Bash(gh run view:*),Bash(gh workflow run batch-changelog.yml:*),Bash(date:*),Read,Glob,Grep"'
+          claude_args: '--allowedTools "Bash(gh api repos/*/*/pulls/*/reviews:*),Bash(gh issue list:*),Bash(gh issue create:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh run list:*),Bash(gh run view:*),Bash(gh workflow run batch-changelog.yml:*),Bash(date:*),Read,Glob,Grep"'
           prompt: |
             You are the Claude Software Factory scanning itself for improvements. This repo IS
             the factory — its workflows are the product. Improving them is the primary goal.
@@ -88,8 +88,10 @@ jobs:
               current time). Do NOT use updatedAt for this check — shepherd bot comments refresh
               updatedAt and cause false negatives. Instead, for each APPROVED PR fetch its reviews:
                 gh api repos/${{ github.repository }}/pulls/<number>/reviews \
-                  --jq '[.[] | select(.state=="APPROVED")] | max_by(.submitted_at) | .submitted_at'
-              Convert the returned ISO 8601 timestamp to epoch (e.g. date -d "<timestamp>" +%s)
+                  --jq '[.[] | select(.state=="APPROVED")] | max_by(.submitted_at) | .submitted_at // empty'
+              If the command returns no output (empty), skip the PR — it has no APPROVED review
+              despite the reviewDecision field, which can happen transiently. Otherwise, convert
+              the returned ISO 8601 timestamp to epoch (e.g. date -d "<timestamp>" +%s)
               and compare against the current epoch (date +%s). Skip the PR if (now - approval_epoch)
               is less than 7200 seconds, to avoid false positives while the shepherd catches up.
               For each such PR, before filing an issue, check its CI status:
