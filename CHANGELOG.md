@@ -1,3 +1,21 @@
+## v1.0.8 — 2026-03-01
+
+## What's Changed
+* fix: add in-flight guard to batch-changelog triggers in proactive scanners by @greynewell in https://github.com/greynewell/claude-software-factory/pull/249
+* fix: add gh label create guard in batch-changelog.yml by @greynewell in https://github.com/greynewell/claude-software-factory/pull/248
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v1.0.7...v1.0.8
+
+## v1.0.7 — 2026-03-01
+
+## What's Changed
+* chore: batch update changelog for all skipped releases by @greynewell in https://github.com/greynewell/claude-software-factory/pull/244
+* fix: embed failing check names in CI failure comment from shepherd by @greynewell in https://github.com/greynewell/claude-software-factory/pull/250
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v1.0.6...v1.0.7
+
 ## v1.0.6 — 2026-03-01
 
 ## What's Changed
