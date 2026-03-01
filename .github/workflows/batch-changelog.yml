@@ -91,8 +91,8 @@ jobs:
                    --base main \
                    --head "$CHANGELOG_BRANCH")
                  PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
-                 gh pr merge "$PR_NUMBER" --squash --auto
-                 gh issue edit "$PR_NUMBER" --add-label "claude-task"
+                 gh pr merge "$PR_NUMBER" --repo ${{ github.repository }} --squash --auto
+                 gh issue edit "$PR_NUMBER" --repo ${{ github.repository }} --add-label "claude-task"
 
             7. After the PR is created (or if an entry already existed in step 5a), close each
                matching issue with a comment:
