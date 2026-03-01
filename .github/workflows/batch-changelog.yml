@@ -12,6 +12,10 @@ on:
         type: boolean
         default: false
 
+concurrency:
+  group: batch-changelog
+  cancel-in-progress: false
+
 permissions:
   contents: write
   id-token: write
