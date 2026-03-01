@@ -1,3 +1,7 @@
+## v0.15.3 — 2026-03-01
+
+- fix: check for existing changelog PR before filing Changelog skipped issue
+
 ## v0.11.2 — 2026-02-28
 
 - fix: remove ambiguous label guard note from shepherd prompt
