@@ -28,6 +28,14 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GH_WORKFLOW_TOKEN }}
 
+      - name: Validate inputs
+        run: |
+          TAG_NAME="${{ github.event.inputs.tag_name }}"
+          if ! [[ "$TAG_NAME" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
+            echo "::error::Invalid tag name: $TAG_NAME"
+            exit 1
+          fi
+
       - name: Update CHANGELOG.md
         uses: anthropics/claude-code-action@v1
         with:
@@ -60,7 +68,7 @@ jobs:
                rules, so this follows the same pattern as auto-tag.yml:
                  git config user.name "github-actions[bot]"
                  git config user.email "github-actions[bot]@users.noreply.github.com"
-                 CHANGELOG_BRANCH="changelog/${{ github.event.inputs.tag_name }}"
+                 CHANGELOG_BRANCH="changelog/${{ github.event.inputs.tag_name }}-$(date -u +%Y%m%d-%H%M%S)"
                  git checkout -b "$CHANGELOG_BRANCH"
                  git add CHANGELOG.md
                  git commit -m "chore: update changelog for ${{ github.event.inputs.tag_name }}"
