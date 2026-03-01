@@ -1,3 +1,20 @@
+## v1.0.2 — 2026-03-01
+
+## What's Changed
+* fix: add actions:write permission and batch-changelog recovery to weekly scanner by @greynewell in https://github.com/greynewell/claude-software-factory/pull/223
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v1.0.1...v1.0.2
+
+## v1.0.1 — 2026-03-01
+
+## What's Changed
+* chore: batch update changelog for all skipped releases by @greynewell in https://github.com/greynewell/claude-software-factory/pull/219
+* fix: use exact tag title match for changelog-skipped dedup by @greynewell in https://github.com/greynewell/claude-software-factory/pull/224
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v1.0.0...v1.0.1
+
 ## v1.0.0 — 2026-03-01
 
 ## What's Changed
