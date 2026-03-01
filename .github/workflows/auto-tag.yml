@@ -73,10 +73,12 @@ jobs:
           PATCH=$(echo $LATEST | cut -d. -f3)
 
           # Analyze all commits since the last tag (handles multi-commit rebase merges)
+          # Use %B (full message) instead of %s (subject only) so BREAKING CHANGE
+          # footers in commit bodies are detected for MAJOR version bumps.
           if git rev-parse "$LATEST" >/dev/null 2>&1; then
-            MSGS=$(git log "${LATEST}..HEAD" --pretty=%s)
+            MSGS=$(git log "${LATEST}..HEAD" --pretty=%B)
           else
-            MSGS=$(git log --pretty=%s)
+            MSGS=$(git log --pretty=%B)
           fi
 
           if [ -z "$MSGS" ]; then
