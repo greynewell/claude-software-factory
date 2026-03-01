@@ -1,3 +1,7 @@
+## v1.0.10 — 2026-03-01
+
+- fix: add gh label create guard and tool permission to changelog.yml
+
 ## v1.0.8 — 2026-03-01
 
 ## What's Changed
