@@ -1,3 +1,7 @@
+## v0.13.2 — 2026-03-01
+
+- fix: push changelog via PR branch instead of direct push to main
+
 ## v0.11.2 — 2026-02-28
 
 - fix: remove ambiguous label guard note from shepherd prompt
