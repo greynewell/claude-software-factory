@@ -127,6 +127,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add CHANGELOG.md
           CHANGELOG_PUSHED=false
+          CHANGELOG_PR_NUMBER=""
           ORIG_HEAD=$(git rev-parse HEAD)
           CHANGELOG_BRANCH="changelog/${NEW_TAG}"
           git checkout -b "$CHANGELOG_BRANCH"
@@ -209,6 +210,25 @@ jobs:
               echo "Tag exists on origin but no release yet; proceeding to create release"
             else
               echo "::error::git push of tag $NEW_TAG failed and tag is not on origin"
+              # Cleanup: close the open changelog PR to prevent a dangling CHANGELOG.md entry from merging into main
+              if [ -n "$CHANGELOG_PR_NUMBER" ]; then
+                echo "Closing changelog PR #${CHANGELOG_PR_NUMBER} to prevent dangling CHANGELOG entry..."
+                gh pr close "$CHANGELOG_PR_NUMBER" --repo "$REPOSITORY" \
+                  --comment "Closing: tag push for \`${NEW_TAG}\` failed — this changelog entry must not merge into main until the release is retried." \
+                  2>/dev/null || echo "::warning::Failed to close changelog PR #${CHANGELOG_PR_NUMBER}"
+                TAG_FAIL_CHANGELOG_LINE="- Changelog PR #${CHANGELOG_PR_NUMBER} was closed to prevent a dangling \`CHANGELOG.md\` entry."
+              else
+                TAG_FAIL_CHANGELOG_LINE=""
+              fi
+              # File a notification issue so the factory can retry
+              TAG_FAIL_BODY=$(printf 'The \`auto-tag\` workflow failed to push git tag \`%s\` to origin.\n\nAt this point:\n- The git tag does **not** exist on the remote.\n- No GitHub release was created.\n%s\n\nWorkflow run: %s/%s/actions/runs/%s\n\n@claude please retry the release by running `git tag %s <correct-sha> && git push origin %s` then `gh release create %s --generate-notes --title %s`' \
+                "$NEW_TAG" "$TAG_FAIL_CHANGELOG_LINE" "$SERVER_URL" "$REPOSITORY" "$RUN_ID" \
+                "$NEW_TAG" "$NEW_TAG" "$NEW_TAG" "$NEW_TAG")
+              gh issue create \
+                --title "Tag push failed for ${NEW_TAG}: retry required" \
+                --body "$TAG_FAIL_BODY" \
+                --label claude-task \
+                || echo "::warning::Failed to create notification issue for failed tag push"
               exit 1
             fi
           else
