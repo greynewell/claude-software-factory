@@ -10,7 +10,7 @@ permissions:
   pull-requests: read
   issues: write
   id-token: write
-  actions: read
+  actions: write
 
 jobs:
   proactive-scan:
@@ -25,7 +25,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GH_WORKFLOW_TOKEN }}
           allowed_bots: "claude[bot],github-actions[bot]"
-          claude_args: '--allowedTools "Bash(gh issue list:*),Bash(gh issue create:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh run list:*),Bash(gh run view:*),Bash(date:*),Read,Glob,Grep"'
+          claude_args: '--allowedTools "Bash(gh issue list:*),Bash(gh issue create:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh run list:*),Bash(gh run view:*),Bash(gh workflow run:*),Bash(date:*),Read,Glob,Grep"'
           prompt: |
             You are the Claude Software Factory scanning itself for improvements. This repo IS
             the factory — its workflows are the product. Improving them is the primary goal.
@@ -90,6 +90,14 @@ jobs:
               shepherd's CHANGES_REQUESTED handling may be broken — see issues #41 and #193);
               include the PR number, title, age in days, and links to issues #41 and #193 in the
               filed issue body
+
+            **Changelog skipped issue recovery**:
+            Check for accumulated "Changelog skipped" issues by running:
+              gh issue list --state open --search "Changelog skipped" --limit 50
+            Count the results. If 2 or more open "Changelog skipped" issues exist, trigger
+            the batch-changelog workflow to resolve them all at once:
+              gh workflow run batch-changelog.yml
+            Do NOT file a new issue for this — just trigger the workflow and move on.
 
             **Pass 2 — General codebase issues**:
             - Logic errors, race conditions, unhandled exceptions
