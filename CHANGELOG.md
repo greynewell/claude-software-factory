@@ -1,3 +1,7 @@
+## v1.0.4 — 2026-03-01
+
+- fix: update batch-changelog prompt to parse tag from correct title format
+
 ## v1.0.2 — 2026-03-01
 
 ## What's Changed
