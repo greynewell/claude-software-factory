@@ -60,7 +60,7 @@ jobs:
 
           # Skip if this is an automated changelog update to prevent recursive triggering
           HEAD_MSG=$(git log -1 --pretty=%s)
-          if echo "$HEAD_MSG" | grep -qE "^chore: update changelog"; then
+          if echo "$HEAD_MSG" | grep -qE "^chore: (update|batch update) changelog"; then
             echo "Skipping: this is an automated changelog update commit"
             exit 0
           fi
