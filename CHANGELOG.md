@@ -1,3 +1,9 @@
+## v1.0.0 — 2026-03-01
+
+- fix: use full commit message format for BREAKING CHANGE footer detection
+- fix: add concurrency group to batch-changelog.yml to prevent duplicate PRs
+- chore: batch update changelog for all skipped releases
+
 ## v0.12.11 — 2026-03-01
 
 ## What's Changed
