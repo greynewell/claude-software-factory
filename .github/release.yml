@@ -1,0 +1,14 @@
+changelog:
+  exclude:
+    labels:
+      - skip-changelog
+  categories:
+    - title: New Features
+      labels:
+        - feat
+    - title: Bug Fixes
+      labels:
+        - fix
+    - title: Other Changes
+      labels:
+        - "*"
