@@ -1,3 +1,8 @@
+## v1.1.6 — 2026-03-01
+
+- fix: correct stuck-PR CI check state string from FAILING to FAILURE
+- chore: batch update changelog for all skipped releases
+
 ## v1.1.5 — 2026-03-01
 
 <!-- Release notes generated using configuration in .github/release.yml at v1.1.5 -->
