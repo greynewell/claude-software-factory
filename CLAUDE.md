@@ -77,3 +77,25 @@ Use [Conventional Commits](https://www.conventionalcommits.org/):
 ## Branch Naming
 
 `claude/issue-{number}-{YYYYMMDD}-{HHMM}`
+
+## PR Branch Checkout
+
+When triggered by a comment or review on a **pull request**, `actions/checkout` in
+`claude.yml` resolves `github.sha` to the default branch (`main`) — not the PR head
+branch. Any file edits or commits will silently target the wrong branch unless you
+explicitly check out the PR branch first.
+
+**Before making any file changes when responding to a PR comment or review**, run:
+
+```bash
+# Get the PR head branch (replace <PR-number> with the actual PR number from context)
+PR_BRANCH=$(gh pr view <PR-number> --json headRefName -q .headRefName)
+
+# Fetch and switch to the correct branch
+git fetch origin "$PR_BRANCH"
+git checkout "$PR_BRANCH"
+```
+
+How to detect you are in a PR context: the task context will show `is_pr: true` or the
+triggering comment URL will contain `/pull/`. When unsure, run `gh pr view <number>` —
+if it succeeds, always checkout its head branch before editing any files.
