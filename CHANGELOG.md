@@ -1,3 +1,8 @@
+## v1.0.5 — 2026-03-01
+
+- fix: close changelog-skipped issues via PR body Closes syntax
+- chore: batch update changelog for all skipped releases
+
 ## v1.0.4 — 2026-03-01
 
 ## What's Changed
