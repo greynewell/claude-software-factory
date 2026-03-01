@@ -39,7 +39,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GH_WORKFLOW_TOKEN }}
           allowed_bots: "claude[bot],github-actions[bot]"
-          claude_args: '--allowedTools "Bash(gh issue list:*),Bash(gh issue close:*),Bash(gh issue edit:*),Bash(gh label create:*),Bash(gh release view:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git config:*),Bash(git pull:*),Bash(git checkout:*),Bash(gh pr create:*),Bash(gh pr merge:*),Read,Write(CHANGELOG.md),Edit(CHANGELOG.md)"'
+          claude_args: '--allowedTools "Bash(gh issue list:*),Bash(gh issue close:*),Bash(gh issue edit:*),Bash(gh label create:*),Bash(gh release view:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git config:*),Bash(git pull:*),Bash(git checkout:*),Bash(gh pr create:*),Bash(gh pr merge:*),Bash(gh pr list:*),Read,Write(CHANGELOG.md),Edit(CHANGELOG.md)"'
           prompt: |
             Batch-update CHANGELOG.md for all open "Changelog skipped" issues.
 
@@ -82,6 +82,14 @@ jobs:
 
             6. Prepend all new entries to CHANGELOG.md, with a blank line between each entry
                and between the new entries and any existing content. Write the updated file.
+
+               Before creating a branch, check whether an open batch changelog PR already exists
+               to avoid duplicate PRs in case the scanner re-triggers before a previous run merges:
+                 EXISTING_PR=$(gh pr list --repo ${{ github.repository }} --state open --search "chore: batch update changelog" --json number --jq '.[0].number // empty')
+                 if [ -n "$EXISTING_PR" ]; then
+                   echo "Open batch changelog PR #$EXISTING_PR already exists -- skipping to avoid duplicate"
+                   exit 0
+                 fi
 
                Configure git identity, create a changelog branch, commit, push, and open a PR
                with auto-merge enabled. Direct pushes to main are blocked by branch protection
