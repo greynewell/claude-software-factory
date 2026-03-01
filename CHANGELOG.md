@@ -1,3 +1,8 @@
+## v1.1.7 — 2026-03-01
+
+- fix: add --label claude-task to gh issue create in scanner prompts
+- fix: skip all shepherd actions for non-claude-task PRs at start of loop
+
 ## v1.1.5 — 2026-03-01
 
 <!-- Release notes generated using configuration in .github/release.yml at v1.1.5 -->
