@@ -25,8 +25,14 @@ jobs:
   claude:
     runs-on: ubuntu-latest
     if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude') &&
+        (github.event.comment.user.login == 'greynewell' ||
+         github.event.comment.user.login == 'github-actions[bot]' ||
+         github.event.comment.user.login == 'claude[bot]')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude') &&
+        (github.event.comment.user.login == 'greynewell' ||
+         github.event.comment.user.login == 'github-actions[bot]' ||
+         github.event.comment.user.login == 'claude[bot]')) ||
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude') &&
         (github.event.review.user.login == 'greynewell' ||
          github.event.review.user.login == 'github-actions[bot]' ||
