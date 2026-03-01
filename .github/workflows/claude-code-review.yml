@@ -32,12 +32,19 @@ jobs:
             2. Security vulnerabilities
             3. Breaking changes
 
+            GitHub Actions-specific checks for this YAML-only workflow repo:
+            4. Permissions over-scoping — flag jobs declaring write permissions (e.g. contents: write, pull-requests: write) when read-only operations would suffice
+            5. Missing timeout-minutes — flag jobs using anthropics/claude-code-action without an explicit timeout-minutes to prevent runaway jobs
+            6. Missing concurrency groups — flag scheduled workflows (on: schedule:) without a concurrency block, which can cause duplicate runs
+            7. Unpinned action versions — flag uses: owner/action@vN tags that should be pinned to a full commit SHA for supply-chain security
+            8. Missing "Closes #N" in PR body — flag automated PRs that do not include a Closes #<issue-number> reference as required by CLAUDE.md
+            9. CLAUDE.md compliance — verify workflows follow the branch-naming (claude/issue-{N}-{YYYYMMDD}-{HHMM}), PR-body (Closes #N), and claude-task label conventions from CLAUDE.md
+
             Post review comments inline on the diff using the GitHub API.
             Be concise. Focus on significant issues only.
-            # CUSTOMIZE: Add stack-specific review criteria here
 
             After posting inline comments, submit a formal review decision using the GitHub API.
-            Determine whether blocking issues were found (significant bugs, security vulnerabilities, or breaking changes).
+            Determine whether blocking issues were found (significant bugs, security vulnerabilities, breaking changes, unpinned action versions, or missing concurrency on scheduled workflows).
             If no blocking issues:
               gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews --method POST --field body='LGTM' --field event=APPROVE
             If blocking issues found:
