@@ -1,3 +1,7 @@
+## v0.15.0 — 2026-03-01
+
+- feat: flag CHANGES_REQUESTED PRs open > 2 days in stuck-PR detector
+
 ## v0.11.2 — 2026-02-28
 
 - fix: remove ambiguous label guard note from shepherd prompt
