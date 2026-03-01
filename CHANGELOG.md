@@ -1,3 +1,9 @@
+## v1.1.2 — 2026-03-01
+
+- fix: correct reviews API glob pattern and add jq null guard
+- fix: scope gh api allowed tool to reviews endpoint only
+- fix: use approval review timestamp instead of updatedAt for stuck APPROVED PR detection
+
 ## v1.0.12 — 2026-03-01
 
 ## What's Changed
