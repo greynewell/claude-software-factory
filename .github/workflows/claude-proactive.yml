@@ -25,7 +25,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GH_WORKFLOW_TOKEN }}
           allowed_bots: "claude[bot],github-actions[bot]"
-          claude_args: '--allowedTools "Bash(gh issue list:*),Bash(gh issue create:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh run list:*),Bash(gh run view:*),Bash(gh workflow run batch-changelog.yml:*),Bash(date:*),Read,Glob,Grep"'
+          claude_args: '--allowedTools "Bash(gh issue list:*),Bash(gh issue create:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh run list:*),Bash(gh run view:*),Bash(gh workflow run batch-changelog.yml:*),Bash(date:*),Read,Glob,Grep"'
           prompt: |
             You are the Claude Software Factory scanning itself for improvements. This repo IS
             the factory — its workflows are the product. Improving them is the primary goal.
@@ -85,7 +85,13 @@ jobs:
               the review workflow is broken)
             - Any PR whose reviewDecision is APPROVED but has not been merged AND whose updatedAt
               is more than 2 hours ago (7200 seconds before current time); skip recently-approved
-              PRs to avoid false positives while the shepherd completes its next cycle
+              PRs to avoid false positives while the shepherd completes its next cycle.
+              For each such PR, before filing an issue, check its CI status:
+                gh pr checks <number> --repo ${{ github.repository }} --json name,state
+              Skip the PR (do NOT file an issue) if any check has state "FAILING", "PENDING",
+              "IN_PROGRESS", or "QUEUED" — a failing or in-progress CI is a legitimate reason
+              the shepherd has not merged yet. Only flag a PR as stuck if all checks are passing
+              (state "SUCCESS") but the PR still has not been merged.
             - Any PR whose reviewDecision is CHANGES_REQUESTED and has been open > 2 days (the
               shepherd's CHANGES_REQUESTED handling may be broken — see issues #41 and #193);
               include the PR number, title, age in days, and links to issues #41 and #193 in the
