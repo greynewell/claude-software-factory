@@ -13,6 +13,7 @@ on:
 permissions:
   contents: write
   issues: write
+  pull-requests: write
 
 jobs:
   auto-tag:
@@ -24,7 +25,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.inputs.ref || github.sha }}
-          # Use PAT so git push of changelog commit to main is authorized
+          # Use PAT so git push of changelog branch is authorized
           token: ${{ secrets.GH_WORKFLOW_TOKEN }}
 
       - name: Create semantic version tag
@@ -39,7 +40,7 @@ jobs:
         run: |
           # Guard: for manual dispatch without an explicit ref, we must be on main.
           # Dispatching from a non-main branch sets github.sha to that branch's HEAD;
-          # the downstream "git push origin main" would then push foreign commits to main.
+          # the changelog branch would then be rooted on a non-main commit.
           if [ "$EVENT_NAME" = "workflow_dispatch" ] && \
              [ -z "$INPUT_REF" ] && \
              [ "$REF_NAME" != "main" ]; then
@@ -117,36 +118,43 @@ jobs:
           } > CHANGELOG.md.new
           mv CHANGELOG.md.new CHANGELOG.md
 
-          # Commit changelog update to main before creating the tag
+          # Commit changelog update via a short-lived branch + auto-merge PR.
+          # Direct pushes to main are blocked by branch protection rules,
+          # so we push to a changelog branch and open a PR with auto-merge enabled.
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add CHANGELOG.md
+          CHANGELOG_PUSHED=false
+          ORIG_HEAD=$(git rev-parse HEAD)
+          CHANGELOG_BRANCH="changelog/${NEW_TAG}"
+          git checkout -b "$CHANGELOG_BRANCH"
           git commit -m "chore: update changelog for ${NEW_TAG}"
 
-          # Try to sync with origin/main and push the changelog commit.
-          # Retry up to 3 times with a 5-second delay to absorb concurrent
-          # push races (e.g. multiple PRs merging in rapid succession).
-          CHANGELOG_PUSHED=false
-          ORIG_MAIN_HEAD=$(git rev-parse HEAD~1)
-          cp CHANGELOG.md /tmp/CHANGELOG.md.new
-          for ATTEMPT in 1 2 3; do
-            if git pull --rebase origin main && git push origin main; then
+          if git push origin "$CHANGELOG_BRANCH"; then
+            CHANGELOG_PR_BODY=$(printf 'Automated changelog update for release %s.\n\nThis PR was created by the `auto-tag` workflow because direct pushes to `main` are protected by branch rules.\n\n_Auto-generated — do not edit._' "${NEW_TAG}")
+            CHANGELOG_PR_URL=$(gh pr create \
+              --repo "$REPOSITORY" \
+              --title "chore: update changelog for ${NEW_TAG}" \
+              --body "$CHANGELOG_PR_BODY" \
+              --base main \
+              --head "$CHANGELOG_BRANCH" 2>&1) || CHANGELOG_PR_URL=""
+
+            if echo "$CHANGELOG_PR_URL" | grep -q "github.com"; then
+              CHANGELOG_PR_NUMBER=$(echo "$CHANGELOG_PR_URL" | grep -oE '[0-9]+$' | tail -1)
+              gh pr merge "$CHANGELOG_PR_NUMBER" --repo "$REPOSITORY" --squash --auto 2>/dev/null || \
+                echo "::warning::auto-merge not available for PR #${CHANGELOG_PR_NUMBER}; it will need manual merge"
+              gh issue edit "$CHANGELOG_PR_NUMBER" --repo "$REPOSITORY" --add-label "claude-task" 2>/dev/null || true
               CHANGELOG_PUSHED=true
-              break
+              echo "Changelog PR #${CHANGELOG_PR_NUMBER} created: ${CHANGELOG_PR_URL}"
+            else
+              echo "::warning::Failed to create changelog PR: ${CHANGELOG_PR_URL}"
             fi
-            echo "::warning::Attempt $ATTEMPT of 3: failed to push changelog commit to origin/main"
-            git rebase --abort 2>/dev/null || true
-            git reset --hard "$ORIG_MAIN_HEAD"
-            if [ "$ATTEMPT" -lt 3 ]; then
-              cp /tmp/CHANGELOG.md.new CHANGELOG.md
-              git add CHANGELOG.md
-              git commit -m "chore: update changelog for ${NEW_TAG}"
-              sleep 5
-            fi
-          done
-          if [ "$CHANGELOG_PUSHED" = "false" ]; then
-            echo "::warning::All 3 attempts failed to push changelog commit to origin/main; tagging HEAD without changelog update"
+          else
+            echo "::warning::Failed to push changelog branch ${CHANGELOG_BRANCH}"
           fi
+
+          # Return to the original merge commit for tagging
+          git checkout "$ORIG_HEAD"
 
           # Idempotency guard: exit cleanly if a concurrent run already pushed this tag.
           # This prevents spurious 'Release missing' issues when two runs race to create
@@ -156,7 +164,7 @@ jobs:
             exit 0
           fi
 
-          # Tag the current HEAD (includes changelog commit if push succeeded)
+          # Tag the original merge commit (ORIG_HEAD, before the changelog branch commit)
           git tag $NEW_TAG
           git push origin $NEW_TAG
           echo "Tagged: $NEW_TAG"
