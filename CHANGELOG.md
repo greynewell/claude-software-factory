@@ -1,3 +1,7 @@
+## v1.1.9 — 2026-03-01
+
+- fix: skip no-review-decision stuck-PR when claude-code-review CI is FAILURE
+
 ## v1.1.5 — 2026-03-01
 
 <!-- Release notes generated using configuration in .github/release.yml at v1.1.5 -->
