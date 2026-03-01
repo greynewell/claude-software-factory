@@ -1,3 +1,13 @@
+## v1.0.11 — 2026-03-01
+
+## What's Changed
+* chore: batch update changelog for all skipped releases by @greynewell in https://github.com/greynewell/claude-software-factory/pull/261
+* docs: instruct Claude to checkout PR head branch when responding to PR comments by @greynewell in https://github.com/greynewell/claude-software-factory/pull/265
+* fix: add idempotency check when gh pr create fails after successful push by @greynewell in https://github.com/greynewell/claude-software-factory/pull/264
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v1.0.10...v1.0.11
+
 ## v1.0.10 — 2026-03-01
 
 ## What's Changed
