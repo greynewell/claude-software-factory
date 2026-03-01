@@ -1,3 +1,88 @@
+## v0.12.11 — 2026-03-01
+
+## What's Changed
+* fix: add id-token: write permission to changelog.yml by @greynewell in https://github.com/greynewell/claude-software-factory/pull/191
+* fix: add retry loop for changelog commit push to reduce Changelog-skipped failures by @greynewell in https://github.com/greynewell/claude-software-factory/pull/189
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v0.12.10...v0.12.11
+
+## v0.12.10 — 2026-03-01
+
+## What's Changed
+* fix: add author whitelist to issue_comment and pull_request_review_comment triggers by @greynewell in https://github.com/greynewell/claude-software-factory/pull/181
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v0.12.9...v0.12.10
+
+## v0.12.9 — 2026-03-01
+
+## What's Changed
+* fix: add authorization gate for pull_request_review trigger by @greynewell in https://github.com/greynewell/claude-software-factory/pull/177
+* fix: add Bash(gh release:*) to claude.yml allowedTools by @greynewell in https://github.com/greynewell/claude-software-factory/pull/176
+* feat: add health check for claude-code-review.yml in proactive scanner by @greynewell in https://github.com/greynewell/claude-software-factory/pull/175
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v0.12.8...v0.12.9
+
+## v0.12.8 — 2026-02-28
+
+## What's Changed
+* fix: add --limit 100 to gh pr list in claude-pr-shepherd.yml by @greynewell in https://github.com/greynewell/claude-software-factory/pull/169
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v0.12.7...v0.12.8
+
+## v0.12.7 — 2026-02-28
+
+## What's Changed
+* fix: skip CHANGES_REQUESTED notification when review predates latest commit by @greynewell in https://github.com/greynewell/claude-software-factory/pull/162
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v0.12.6...v0.12.7
+
+## v0.12.6 — 2026-02-28
+
+## What's Changed
+* fix: add idempotency guard to auto-tag.yml to prevent spurious 'Release missing' issues by @greynewell in https://github.com/greynewell/claude-software-factory/pull/164
+* feat: add Bash(gh run view:*) and Bash(gh run list:*) to allowedTools in claude.yml by @greynewell in https://github.com/greynewell/claude-software-factory/pull/163
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v0.12.5...v0.12.6
+
+## v0.12.5 — 2026-02-28
+
+## What's Changed
+* fix: add claude-task label to auto-tag notification issues by @greynewell in https://github.com/greynewell/claude-software-factory/pull/156
+* fix: add Bash(gh run view:*) to allowedTools in claude-proactive.yml by @greynewell in https://github.com/greynewell/claude-software-factory/pull/155
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v0.12.4...v0.12.5
+
+## v0.12.4 — 2026-02-28
+
+## What's Changed
+* fix: add Bash(gh run view:*) to allowedTools in claude-self-improve.yml by @greynewell in https://github.com/greynewell/claude-software-factory/pull/148
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v0.12.3...v0.12.4
+
+## v0.12.0 — 2026-02-28
+
+## What's Changed
+* feat: add workflow_dispatch trigger to auto-tag.yml by @greynewell in https://github.com/greynewell/claude-software-factory/pull/134
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v0.11.2...v0.12.0
+
+## v0.9.10 — 2026-02-28
+
+## What's Changed
+* fix: handle git push failure after successful rebase in auto-tag.yml by @greynewell in https://github.com/greynewell/claude-software-factory/pull/112
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v0.9.9...v0.9.10
+
 ## v0.11.2 — 2026-02-28
 
 - fix: remove ambiguous label guard note from shepherd prompt
