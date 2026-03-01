@@ -20,13 +20,51 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
     steps:
+      - name: Check for self-modification
+        id: self-check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          SELF_MODIFIED=$(gh pr view ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --json files \
+            --jq '[.files[].path] | any(. == ".github/workflows/claude-code-review.yml")')
+          echo "self_modified=$SELF_MODIFIED" >> $GITHUB_OUTPUT
+
+      - name: Post self-modification notice
+        if: steps.self-check.outputs.self_modified == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --body "This PR modifies the Claude Code Review workflow itself. Automated code review cannot run for security reasons (the action requires the workflow on the PR branch to match the default branch). Please review and merge manually."
+
       - name: Run Claude Code Review
+        if: steps.self-check.outputs.self_modified != 'true'
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_bots: "claude[bot],github-actions[bot]"
-          claude_args: '--allowedTools "Bash(gh pr view:*),Bash(gh api:*),Read,Glob,Grep"'
+          claude_args: '--allowedTools "Bash(gh pr view:*),Bash(gh api:*),Bash(gh pr checks:*),Read,Glob,Grep"'
           prompt: |
+            First, check the CI status of this PR before doing any code review:
+              gh pr checks ${{ github.event.pull_request.number }} --repo ${{ github.repository }}
+
+            Interpret the output as follows:
+            - If ANY check is in a pending or in_progress state:
+                Do NOT submit a formal review decision (no APPROVE, no REQUEST_CHANGES).
+                Post a single comment via the GitHub API noting that CI is still running and that the review will complete once all checks finish.
+                Then stop — do not proceed to code review.
+            - If ANY check has failed or been cancelled:
+                Submit REQUEST_CHANGES immediately:
+                  gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews \
+                    --method POST \
+                    --field body='CI checks are failing or cancelled. Please fix all CI failures before this PR can be approved.' \
+                    --field event=REQUEST_CHANGES
+                Then stop — do not proceed to code review.
+            - Only if ALL checks have passed, proceed with the code review below.
+
             Review this pull request for:
             1. Correctness and logic errors
             2. Security vulnerabilities
