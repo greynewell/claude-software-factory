@@ -1,3 +1,12 @@
+## v1.0.12 — 2026-03-01
+
+## What's Changed
+* chore: batch update changelog for all skipped releases by @greynewell in https://github.com/greynewell/claude-software-factory/pull/267
+* fix: add Bash(date:*) to allowedTools in batch-changelog.yml and changelog.yml by @greynewell in https://github.com/greynewell/claude-software-factory/pull/269
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v1.0.11...v1.0.12
+
 ## v1.0.11 — 2026-03-01
 
 ## What's Changed
