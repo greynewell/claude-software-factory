@@ -31,17 +31,31 @@ jobs:
             1. Correctness and logic errors
             2. Security vulnerabilities
             3. Breaking changes
+            4. CLAUDE.md compliance: the PR body must include a GitHub closing keyword with issue number
+
+            ## Step 1: Check CLAUDE.md compliance
+
+            Fetch the PR body and verify it contains a closing keyword:
+              gh pr view ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --json body --jq '.body'
+
+            The body MUST match the pattern (case-insensitive): `(closes|fixes|resolves) #[0-9]+`
+            If this pattern is absent, it is a BLOCKING issue. Note it as:
+            "PR body must include `Closes #<issue-number>` per CLAUDE.md. Please add it."
+
+            ## Step 2: Review code
 
             Post review comments inline on the diff using the GitHub API.
             Be concise. Focus on significant issues only.
             # CUSTOMIZE: Add stack-specific review criteria here
 
-            After posting inline comments, submit a formal review decision using the GitHub API.
-            Determine whether blocking issues were found (significant bugs, security vulnerabilities, or breaking changes).
-            If no blocking issues:
+            ## Step 3: Submit review decision
+
+            Submit a formal review using the GitHub API.
+            A blocking issue is any of: significant bugs, security vulnerabilities, breaking changes, or missing close keyword in PR body.
+            If no blocking issues (code is fine AND PR body contains a close keyword):
               gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews --method POST --field body='LGTM' --field event=APPROVE
-            If blocking issues found:
+            If blocking issues found (including missing Closes/Fixes/Resolves #N link):
               gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews --method POST --field body='Changes required: [summarize issues]' --field event=REQUEST_CHANGES
-            Only use REQUEST_CHANGES for significant bugs, security vulnerabilities, or breaking changes. Use APPROVE for minor issues, style comments, or suggestions.
+            Only use REQUEST_CHANGES for significant bugs, security vulnerabilities, breaking changes, or missing Closes/Fixes/Resolves #N link. Use APPROVE for minor issues, style comments, or suggestions.
           # CUSTOMIZE: Restrict to read-only tools
           # claude_args: "--allowedTools Bash(go vet ./...),Bash(go test ./...)"
