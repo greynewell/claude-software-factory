@@ -1,3 +1,26 @@
+## v1.1.5 — 2026-03-01
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.1.5 -->
+
+## What's Changed
+### Other Changes
+* fix: extend skip guard regex to cover batch-changelog commits by @greynewell in https://github.com/greynewell/claude-software-factory/pull/295
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v1.1.4...v1.1.5
+
+## v1.1.4 — 2026-03-01
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.1.4 -->
+
+## What's Changed
+### Other Changes
+* fix: replace exit 0 shell snippet with natural-language stop instruction in batch-changelog.yml by @greynewell in https://github.com/greynewell/claude-software-factory/pull/288
+* chore: batch update changelog for all skipped releases by @greynewell in https://github.com/greynewell/claude-software-factory/pull/291
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v1.1.3...v1.1.4
+
 ## v1.1.3 — 2026-03-01
 
 <!-- Release notes generated using configuration in .github/release.yml at v1.1.3 -->
