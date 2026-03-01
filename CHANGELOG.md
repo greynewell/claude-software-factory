@@ -1,3 +1,8 @@
+## v1.0.9 — 2026-03-01
+
+- fix: add duplicate-PR guard to batch-changelog.yml
+- chore: batch update changelog for all skipped releases
+
 ## v1.0.8 — 2026-03-01
 
 ## What's Changed
