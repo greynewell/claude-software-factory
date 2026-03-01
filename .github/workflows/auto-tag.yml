@@ -264,7 +264,9 @@ jobs:
           if [ "$CHANGELOG_PUSHED" = "false" ]; then
             ISSUE_BODY=$(printf 'The `auto-tag` workflow tagged and released `%s` but could not update `CHANGELOG.md` because pushing the changelog commit to `main` failed (a concurrent push or transient network error may have occurred during the workflow run).\n\nThe tag and GitHub release were created from the original HEAD. Please update `CHANGELOG.md` manually or trigger the `changelog.yml` workflow.\n\nWorkflow run: %s/%s/actions/runs/%s\n\n@claude please run the changelog.yml workflow for this tag and close this issue once done.' \
               "$NEW_TAG" "$SERVER_URL" "$REPOSITORY" "$RUN_ID")
-            EXISTING_ISSUE_NUMBER=$(gh issue list --repo "$REPOSITORY" --state open --limit 100 --json number,title | \
+            EXISTING_ISSUE_NUMBER=$(gh issue list --repo "$REPOSITORY" --state open \
+              --search "\"Changelog skipped for ${NEW_TAG}\" in:title" \
+              --json number,title | \
               jq -r --arg TAG "Changelog skipped for ${NEW_TAG}: failed to push changelog to main" '[.[] | select(.title == $TAG)] | .[0].number // empty')
             if [ -n "$EXISTING_ISSUE_NUMBER" ]; then
               echo "An open 'Changelog skipped' issue already exists (#${EXISTING_ISSUE_NUMBER}); adding a comment for ${NEW_TAG}"
