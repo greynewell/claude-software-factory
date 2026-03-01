@@ -143,7 +143,7 @@ jobs:
 
             if echo "$CHANGELOG_PR_URL" | grep -q "github.com"; then
               CHANGELOG_PR_NUMBER=$(echo "$CHANGELOG_PR_URL" | grep -oE '[0-9]+$' | tail -1)
-              gh pr merge "$CHANGELOG_PR_NUMBER" --repo "$REPOSITORY" --squash --auto 2>/dev/null || \
+              gh pr merge "$CHANGELOG_PR_NUMBER" --repo "$REPOSITORY" --squash --auto --delete-branch 2>/dev/null || \
                 echo "::warning::auto-merge not available for PR #${CHANGELOG_PR_NUMBER}; it will need manual merge"
               gh issue edit "$CHANGELOG_PR_NUMBER" --repo "$REPOSITORY" --add-label "claude-task" 2>/dev/null || true
               CHANGELOG_PUSHED=true
