@@ -63,9 +63,15 @@ jobs:
 
             4. Write the updated (or newly created) CHANGELOG.md.
 
-            5. Configure git identity, create a changelog branch, commit, push, and open a PR
-               with auto-merge enabled. Direct pushes to main are blocked by branch protection
-               rules, so this follows the same pattern as auto-tag.yml:
+            5. Search for any open issues filed because the changelog was skipped for this tag.
+               Store the matching issue numbers (space-separated) in SKIP_ISSUE_NUMBERS:
+                 SKIP_ISSUE_NUMBERS=$(gh issue list --state open --search "Changelog skipped for ${{ github.event.inputs.tag_name }}" --json number --jq '.[].number' | tr '\n' ' ')
+
+               Configure git identity, create a changelog branch, commit, push, and open a PR
+               with auto-merge enabled. Build the PR body with a "Closes #<N>" line for each
+               matching issue so GitHub auto-closes them when the PR merges. Direct pushes to
+               main are blocked by branch protection rules, so this follows the same pattern as
+               auto-tag.yml:
                  git config user.name "github-actions[bot]"
                  git config user.email "github-actions[bot]@users.noreply.github.com"
                  CHANGELOG_BRANCH="changelog/${{ github.event.inputs.tag_name }}-$(date -u +%Y%m%d-%H%M%S)"
@@ -73,18 +79,18 @@ jobs:
                  git add CHANGELOG.md
                  git commit -m "chore: update changelog for ${{ github.event.inputs.tag_name }}"
                  git push origin "$CHANGELOG_BRANCH"
+                 CLOSES_LINES=$(for num in $SKIP_ISSUE_NUMBERS; do echo "Closes #$num"; done)
+                 PR_BODY=$(printf "Automated changelog update for ${{ github.event.inputs.tag_name }}. Direct pushes to main are blocked by branch protection rules.\n\n%s" "$CLOSES_LINES")
                  PR_URL=$(gh pr create \
                    --repo ${{ github.repository }} \
                    --title "chore: update changelog for ${{ github.event.inputs.tag_name }}" \
-                   --body "Automated changelog update for ${{ github.event.inputs.tag_name }}. Direct pushes to main are blocked by branch protection rules." \
+                   --body "$PR_BODY" \
                    --base main \
                    --head "$CHANGELOG_BRANCH")
                  PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
                  gh pr merge "$PR_NUMBER" --repo ${{ github.repository }} --squash --auto
                  gh issue edit "$PR_NUMBER" --repo ${{ github.repository }} --add-label "claude-task"
 
-            6. After the PR is created, close any open GitHub issues that were filed because the
-               changelog was skipped for this tag. Search for open issues mentioning the tag and
-               close them with an explanatory comment:
-                 gh issue list --state open --search "Changelog skipped for ${{ github.event.inputs.tag_name }}" --json number --jq '.[].number' | xargs -I{} gh issue close {} --comment "Resolved: changelog for ${{ github.event.inputs.tag_name }} will be merged via PR."
-               If no matching issues are found, skip this step silently.
+            6. Do NOT manually close the issues. The "Closes #<N>" entries in the PR body (added
+               in step 5) will cause GitHub to auto-close them when the PR merges. If the PR is
+               closed without merging, the issues remain open for the scanner to retry.
