@@ -124,7 +124,7 @@ jobs:
             - Dead code or unused files
 
             For each finding, file an issue:
-              gh issue create --title "..." --body "...specific file, current behavior, desired behavior...\n\n@claude please implement this"
+              gh issue create --title "..." --body "...specific file, current behavior, desired behavior...\n\n@claude please implement this" --label claude-task
 
             File at most 3 issues per run. Prioritize factory self-improvement over general bugs.
             Zero issues is fine if nothing concrete warrants attention.
