@@ -1,0 +1,89 @@
+name: Batch Changelog
+
+on:
+  # Triggered manually to resolve all open "Changelog skipped" issues in one dispatch.
+  # Finds every open issue whose title matches "Changelog skipped for <tag>", generates
+  # a changelog entry for each tag, and closes the issue after the entry is pushed.
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'List tags that would be processed without making changes'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  id-token: write
+  issues: write
+
+jobs:
+  batch-update-changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GH_WORKFLOW_TOKEN }}
+
+      - name: Batch Update CHANGELOG.md
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GH_WORKFLOW_TOKEN }}
+          allowed_bots: "claude[bot],github-actions[bot]"
+          claude_args: '--allowedTools "Bash(gh issue list:*),Bash(gh issue close:*),Bash(gh release view:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git config:*),Bash(git pull:*),Read,Write(CHANGELOG.md),Edit(CHANGELOG.md)"'
+          prompt: |
+            Batch-update CHANGELOG.md for all open "Changelog skipped" issues.
+
+            DRY_RUN=${{ github.event.inputs.dry_run }}
+
+            Steps:
+
+            1. Find all open issues matching the "Changelog skipped for" pattern:
+                 gh issue list --state open --search "Changelog skipped for" --json number,title --jq '.[] | "\(.number)|\(.title)"'
+
+               For each result, extract the tag name from the issue title. The title format is:
+                 "Changelog skipped for <tag_name>"
+               Parse the tag by taking everything after "Changelog skipped for ".
+
+            2. If no matching issues are found, print "No open Changelog-skipped issues found." and stop.
+
+            3. If DRY_RUN is "true", print the list of issue numbers and tag names that would be
+               processed, then stop without making any changes.
+
+            4. Read the current CHANGELOG.md (treat it as empty if it does not exist).
+
+            5. For each tag collected in step 1:
+               a. Check if CHANGELOG.md already has a section header for this tag
+                  (look for a line starting with "## <tag>"). If found, the entry already
+                  exists — skip generating a new entry but still proceed to step 7 to close
+                  the issue.
+               b. Fetch the release details:
+                    gh release view <tag> --json tagName,body,publishedAt
+                  If the release does not exist or the command fails, print a warning and skip
+                  this tag entirely (do not close its issue).
+               c. Build the new changelog entry in this exact format:
+                    ## <tag> — YYYY-MM-DD
+                    <release body text>
+                  Use the release's publishedAt field for the date; format it as YYYY-MM-DD.
+
+            6. Prepend all new entries to CHANGELOG.md, with a blank line between each entry
+               and between the new entries and any existing content. Write the updated file.
+
+               Configure git identity and commit all changes in a single commit:
+                 git config user.name "github-actions[bot]"
+                 git config user.email "github-actions[bot]@users.noreply.github.com"
+                 git add CHANGELOG.md
+                 git commit -m "chore: batch update changelog for all skipped releases"
+                 git pull --rebase origin main
+                 git push origin main
+
+            7. After the push succeeds (or if an entry already existed in step 5a), close each
+               matching issue with a comment:
+                 gh issue close <number> --comment "Resolved: changelog entry has been pushed to main."
+
+            If no new entries were needed (all tags already had entries), still close any
+            matching issues and skip the git commit step.
