@@ -39,7 +39,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GH_WORKFLOW_TOKEN }}
           allowed_bots: "claude[bot],github-actions[bot]"
-          claude_args: '--allowedTools "Bash(gh issue list:*),Bash(gh issue close:*),Bash(gh issue edit:*),Bash(gh release view:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git config:*),Bash(git pull:*),Bash(git checkout:*),Bash(gh pr create:*),Bash(gh pr merge:*),Read,Write(CHANGELOG.md),Edit(CHANGELOG.md)"'
+          claude_args: '--allowedTools "Bash(gh issue list:*),Bash(gh issue close:*),Bash(gh issue edit:*),Bash(gh label create:*),Bash(gh release view:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git config:*),Bash(git pull:*),Bash(git checkout:*),Bash(gh pr create:*),Bash(gh pr merge:*),Read,Write(CHANGELOG.md),Edit(CHANGELOG.md)"'
           prompt: |
             Batch-update CHANGELOG.md for all open "Changelog skipped" issues.
 
@@ -103,6 +103,7 @@ jobs:
                    --head "$CHANGELOG_BRANCH")
                  PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
                  gh pr merge "$PR_NUMBER" --repo ${{ github.repository }} --squash --auto --delete-branch
+                 gh label create claude-task --description 'Assigned to Claude for implementation' --color 7057ff 2>/dev/null || true
                  gh issue edit "$PR_NUMBER" --repo ${{ github.repository }} --add-label "claude-task"
 
             7. Do NOT manually close the issues when a PR was created. The "Closes #<N>" entries
