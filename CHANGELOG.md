@@ -1,3 +1,9 @@
+## v1.0.11 — 2026-03-01
+
+- fix: add idempotency check when gh pr create fails after successful push
+- docs: instruct Claude to checkout PR head branch when responding to PR comments
+- chore: batch update changelog for all skipped releases
+
 ## v1.0.10 — 2026-03-01
 
 ## What's Changed
