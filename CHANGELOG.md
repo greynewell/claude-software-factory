@@ -1,3 +1,20 @@
+## v1.0.6 — 2026-03-01
+
+## What's Changed
+* fix: add --delete-branch to changelog gh pr merge commands by @greynewell in https://github.com/greynewell/claude-software-factory/pull/242
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v1.0.5...v1.0.6
+
+## v1.0.5 — 2026-03-01
+
+## What's Changed
+* chore: batch update changelog for all skipped releases by @greynewell in https://github.com/greynewell/claude-software-factory/pull/237
+* fix: close changelog-skipped issues via PR body Closes syntax by @greynewell in https://github.com/greynewell/claude-software-factory/pull/239
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v1.0.4...v1.0.5
+
 ## v1.0.4 — 2026-03-01
 
 ## What's Changed
