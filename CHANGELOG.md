@@ -1,3 +1,8 @@
+## v1.0.7 — 2026-03-01
+
+- fix: embed failing check names in CI failure comment from shepherd
+- chore: batch update changelog for all skipped releases
+
 ## v1.0.6 — 2026-03-01
 
 ## What's Changed
