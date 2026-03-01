@@ -1,3 +1,8 @@
+## v1.1.3 — 2026-03-01
+
+- fix: replace --limit 100 dedup check with targeted --search query in auto-tag.yml
+- chore: batch update changelog for all skipped releases
+
 ## v1.1.1 — 2026-03-01
 
 <!-- Release notes generated using configuration in .github/release.yml at v1.1.1 -->
