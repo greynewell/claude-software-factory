@@ -80,8 +80,8 @@ jobs:
                    --base main \
                    --head "$CHANGELOG_BRANCH")
                  PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
-                 gh pr merge "$PR_NUMBER" --squash --auto
-                 gh issue edit "$PR_NUMBER" --add-label "claude-task"
+                 gh pr merge "$PR_NUMBER" --repo ${{ github.repository }} --squash --auto
+                 gh issue edit "$PR_NUMBER" --repo ${{ github.repository }} --add-label "claude-task"
 
             6. After the PR is created, close any open GitHub issues that were filed because the
                changelog was skipped for this tag. Search for open issues mentioning the tag and
