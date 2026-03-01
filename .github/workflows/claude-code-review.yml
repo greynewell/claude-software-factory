@@ -18,7 +18,11 @@ concurrency:
 jobs:
   claude-code-review:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
+    if: >
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.user.login != 'github-actions[bot]' &&
+      !startsWith(github.event.pull_request.title, 'chore: update changelog') &&
+      !startsWith(github.event.pull_request.title, 'chore: batch update changelog')
     steps:
       - name: Run Claude Code Review
         uses: anthropics/claude-code-action@v1
