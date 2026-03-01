@@ -15,6 +15,7 @@ permissions:
   contents: write
   id-token: write
   issues: write
+  pull-requests: write
 
 jobs:
   update-changelog:
@@ -33,7 +34,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GH_WORKFLOW_TOKEN }}
           allowed_bots: "claude[bot],github-actions[bot]"
-          claude_args: '--allowedTools "Bash(gh release view:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git config:*),Bash(git pull:*),Bash(gh issue list:*),Bash(gh issue close:*),Read,Write(CHANGELOG.md),Edit(CHANGELOG.md)"'
+          claude_args: '--allowedTools "Bash(gh release view:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git config:*),Bash(git pull:*),Bash(git checkout:*),Bash(gh pr create:*),Bash(gh pr merge:*),Bash(gh issue list:*),Bash(gh issue close:*),Bash(gh issue edit:*),Read,Write(CHANGELOG.md),Edit(CHANGELOG.md)"'
           prompt: |
             Update CHANGELOG.md for the release ${{ github.event.inputs.tag_name }}.
 
@@ -54,16 +55,28 @@ jobs:
 
             4. Write the updated (or newly created) CHANGELOG.md.
 
-            5. Configure git identity and commit:
+            5. Configure git identity, create a changelog branch, commit, push, and open a PR
+               with auto-merge enabled. Direct pushes to main are blocked by branch protection
+               rules, so this follows the same pattern as auto-tag.yml:
                  git config user.name "github-actions[bot]"
                  git config user.email "github-actions[bot]@users.noreply.github.com"
+                 CHANGELOG_BRANCH="changelog/${{ github.event.inputs.tag_name }}"
+                 git checkout -b "$CHANGELOG_BRANCH"
                  git add CHANGELOG.md
                  git commit -m "chore: update changelog for ${{ github.event.inputs.tag_name }}"
-                 git pull --rebase origin main
-                 git push origin main
+                 git push origin "$CHANGELOG_BRANCH"
+                 PR_URL=$(gh pr create \
+                   --repo ${{ github.repository }} \
+                   --title "chore: update changelog for ${{ github.event.inputs.tag_name }}" \
+                   --body "Automated changelog update for ${{ github.event.inputs.tag_name }}. Direct pushes to main are blocked by branch protection rules." \
+                   --base main \
+                   --head "$CHANGELOG_BRANCH")
+                 PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
+                 gh pr merge "$PR_NUMBER" --squash --auto
+                 gh issue edit "$PR_NUMBER" --add-label "claude-task"
 
-            6. After the push succeeds, close any open GitHub issues that were filed because the
+            6. After the PR is created, close any open GitHub issues that were filed because the
                changelog was skipped for this tag. Search for open issues mentioning the tag and
                close them with an explanatory comment:
-                 gh issue list --state open --search "Changelog skipped for ${{ github.event.inputs.tag_name }}" --json number --jq '.[].number' | xargs -I{} gh issue close {} --comment "Resolved: changelog for ${{ github.event.inputs.tag_name }} has been pushed to main."
+                 gh issue list --state open --search "Changelog skipped for ${{ github.event.inputs.tag_name }}" --json number --jq '.[].number' | xargs -I{} gh issue close {} --comment "Resolved: changelog for ${{ github.event.inputs.tag_name }} will be merged via PR."
                If no matching issues are found, skip this step silently.
