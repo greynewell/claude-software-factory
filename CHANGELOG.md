@@ -1,3 +1,8 @@
+## v1.1.0 — 2026-03-01
+
+- fix: use correct label names in release.yml (enhancement, bug)
+- feat: add .github/release.yml to filter chore PRs from release notes
+
 ## v1.0.12 — 2026-03-01
 
 ## What's Changed
