@@ -1,3 +1,7 @@
+## v1.1.1 — 2026-03-01
+
+- fix: close changelog PR and file notification issue on tag push failure
+
 ## v1.0.12 — 2026-03-01
 
 ## What's Changed
