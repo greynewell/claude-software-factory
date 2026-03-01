@@ -86,10 +86,14 @@ jobs:
             **Changelog skipped issue recovery**:
             Check for accumulated "Changelog skipped" issues by running:
               gh issue list --state open --search "Changelog skipped" --limit 50
-            Count the results. If 2 or more open "Changelog skipped" issues exist, trigger
-            the batch-changelog workflow to resolve them all at once:
+            Count the results. If 2 or more open "Changelog skipped" issues exist, first
+            check whether a batch-changelog run is already queued or in progress:
+              gh run list --workflow=batch-changelog.yml --json status --limit 10
+            Inspect the returned JSON. If any entry has status "queued" or "in_progress",
+            a run is already in flight — skip the trigger entirely and move on.
+            Only if no queued or in_progress runs exist, trigger the workflow:
               gh workflow run batch-changelog.yml
-            Do NOT file a new issue for this — just trigger the workflow and move on.
+            Do NOT file a new issue for this — just trigger the workflow (or skip it) and move on.
 
             For each concrete finding across all four passes, file an issue:
               gh issue create --title "..." --body "...specific file, line or behavior, current state, desired improvement...\n\n@claude please implement this"
