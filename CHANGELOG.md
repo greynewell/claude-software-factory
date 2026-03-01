@@ -1,3 +1,8 @@
+## v1.0.1 — 2026-03-01
+
+- fix: use exact tag title match for changelog-skipped dedup
+- chore: batch update changelog for all skipped releases
+
 ## v1.0.0 — 2026-03-01
 
 ## What's Changed
