@@ -27,6 +27,10 @@ jobs:
           allowed_bots: "claude[bot],github-actions[bot]"
           claude_args: '--allowedTools "Bash(gh pr view:*),Bash(gh api:*),Read,Glob,Grep"'
           prompt: |
+            Step 0: Fetch the PR diff by running:
+              gh pr view ${{ github.event.pull_request.number }} --patch --repo ${{ github.repository }}
+            Read the full output to understand all changed files and lines before proceeding.
+
             Review this pull request for:
             1. Correctness and logic errors
             2. Security vulnerabilities
