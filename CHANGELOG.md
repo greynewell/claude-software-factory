@@ -1,3 +1,34 @@
+## v1.1.1 — 2026-03-01
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.1.1 -->
+
+## What's Changed
+### Other Changes
+* fix: close changelog PR and file notification issue on tag push failure by @greynewell in https://github.com/greynewell/claude-software-factory/pull/281
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v1.1.0...v1.1.1
+
+## v1.1.0 — 2026-03-01
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.1.0 -->
+
+## What's Changed
+### Other Changes
+* feat: add .github/release.yml to filter chore PRs from release notes by @greynewell in https://github.com/greynewell/claude-software-factory/pull/275
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v1.0.13...v1.1.0
+
+## v1.0.13 — 2026-03-01
+
+## What's Changed
+* chore: batch update changelog for all skipped releases by @greynewell in https://github.com/greynewell/claude-software-factory/pull/271
+* fix: skip APPROVED stuck-PR check when CI is failing or in-progress by @greynewell in https://github.com/greynewell/claude-software-factory/pull/274
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v1.0.12...v1.0.13
+
 ## v1.0.12 — 2026-03-01
 
 ## What's Changed
