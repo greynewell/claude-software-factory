@@ -88,7 +88,7 @@ jobs:
                    --base main \
                    --head "$CHANGELOG_BRANCH")
                  PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
-                 gh pr merge "$PR_NUMBER" --repo ${{ github.repository }} --squash --auto
+                 gh pr merge "$PR_NUMBER" --repo ${{ github.repository }} --squash --auto --delete-branch
                  gh issue edit "$PR_NUMBER" --repo ${{ github.repository }} --add-label "claude-task"
 
             6. Do NOT manually close the issues. The "Closes #<N>" entries in the PR body (added
