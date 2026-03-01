@@ -1,3 +1,8 @@
+## v1.1.4 — 2026-03-01
+
+- chore: batch update changelog for all skipped releases
+- fix: replace exit 0 shell snippet with natural-language stop instruction in batch-changelog.yml
+
 ## v1.1.3 — 2026-03-01
 
 <!-- Release notes generated using configuration in .github/release.yml at v1.1.3 -->
