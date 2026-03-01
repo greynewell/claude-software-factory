@@ -82,7 +82,12 @@ jobs:
               gh pr list --repo ${{ github.repository }} --state open --json number,title,createdAt,updatedAt,reviewDecision
             Flag and file an issue for each of the following (if no open issue already covers it):
             - Any PR that has been open > 2 days without a review decision (scanner is blind or
-              the review workflow is broken)
+              the review workflow is broken). Before filing, check CI status for the PR:
+                gh pr checks <number> --repo ${{ github.repository }} --json name,state
+              Skip the PR (do NOT file an issue) if the claude-code-review check has state
+              "FAILURE" — a failing code review CI is the root cause and is already tracked by
+              existing open issues. Only flag a PR as stuck-no-review if the claude-code-review
+              check is absent or has a non-FAILURE state.
             - Any PR whose reviewDecision is APPROVED but has not been merged AND whose most
               recent APPROVED review was submitted more than 2 hours ago (7200 seconds before
               current time). Do NOT use updatedAt for this check — shepherd bot comments refresh
