@@ -1,3 +1,8 @@
+## v1.0.8 — 2026-03-01
+
+- fix: add gh label create guard in batch-changelog.yml before --add-label
+- fix: add in-flight guard to batch-changelog triggers in proactive scanners
+
 ## v1.0.6 — 2026-03-01
 
 ## What's Changed
