@@ -25,8 +25,25 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_bots: "claude[bot],github-actions[bot]"
-          claude_args: '--allowedTools "Bash(gh pr view:*),Bash(gh api:*),Read,Glob,Grep"'
+          claude_args: '--allowedTools "Bash(gh pr view:*),Bash(gh api:*),Bash(gh pr checks:*),Read,Glob,Grep"'
           prompt: |
+            First, check the CI status of this PR before doing any code review:
+              gh pr checks ${{ github.event.pull_request.number }} --repo ${{ github.repository }}
+
+            Interpret the output as follows:
+            - If ANY check is in a pending or in_progress state:
+                Do NOT submit a formal review decision (no APPROVE, no REQUEST_CHANGES).
+                Post a single comment via the GitHub API noting that CI is still running and that the review will complete once all checks finish.
+                Then stop — do not proceed to code review.
+            - If ANY check has failed or been cancelled:
+                Submit REQUEST_CHANGES immediately:
+                  gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews \
+                    --method POST \
+                    --field body='CI checks are failing or cancelled. Please fix all CI failures before this PR can be approved.' \
+                    --field event=REQUEST_CHANGES
+                Then stop — do not proceed to code review.
+            - Only if ALL checks have passed, proceed with the code review below.
+
             Review this pull request for:
             1. Correctness and logic errors
             2. Security vulnerabilities
