@@ -1,3 +1,8 @@
+## v1.0.12 — 2026-03-01
+
+- fix: add Bash(date:*) to allowedTools in batch-changelog.yml and changelog.yml
+- chore: batch update changelog for all skipped releases
+
 ## v1.0.11 — 2026-03-01
 
 ## What's Changed
