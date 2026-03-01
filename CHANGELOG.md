@@ -1,3 +1,20 @@
+## v1.0.4 — 2026-03-01
+
+## What's Changed
+* fix: update batch-changelog prompt to parse tag from correct title format by @greynewell in https://github.com/greynewell/claude-software-factory/pull/233
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v1.0.3...v1.0.4
+
+## v1.0.3 — 2026-03-01
+
+## What's Changed
+* chore: batch update changelog for all skipped releases by @greynewell in https://github.com/greynewell/claude-software-factory/pull/228
+* fix: handle TOCTOU race in auto-tag git push by @greynewell in https://github.com/greynewell/claude-software-factory/pull/234
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v1.0.2...v1.0.3
+
 ## v1.0.2 — 2026-03-01
 
 ## What's Changed
