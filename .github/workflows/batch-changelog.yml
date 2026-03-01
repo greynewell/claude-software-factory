@@ -51,8 +51,10 @@ jobs:
                  gh issue list --state open --search "Changelog skipped for" --json number,title --jq '.[] | "\(.number)|\(.title)"'
 
                For each result, extract the tag name from the issue title. The title format is:
-                 "Changelog skipped for <tag_name>"
-               Parse the tag by taking everything after "Changelog skipped for ".
+                 "Changelog skipped for <tag_name>: <reason>"
+               Parse the tag by taking the token immediately after "Changelog skipped for " and
+               before the first colon. For example, from the title
+               "Changelog skipped for v1.0.2: failed to push changelog to main", extract "v1.0.2".
 
             2. If no matching issues are found, print "No open Changelog-skipped issues found." and stop.
 
