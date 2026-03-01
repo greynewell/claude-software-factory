@@ -34,6 +34,8 @@ jobs:
               gh pr list --repo ${{ github.repository }} --state open --limit 100 --json number,title,isDraft,mergeable,labels
 
             For each non-draft PR:
+            0. Label guard: Before any other action, inspect the labels array returned by the listing command above.
+               If none of the label objects in the labels array has name equal to "claude-task", skip ALL remaining steps for this PR immediately — do not post any comments, do not check CI, do not check conflicts, do not request reviews, do not attempt to merge. Move on to the next PR.
             1. Check CI: Run gh pr checks <number> --repo ${{ github.repository }} and evaluate the output carefully before proceeding:
                - If the output is empty (no checks listed), CI has not started yet → SKIP this PR entirely, do not merge
                - If any check shows a status of "pending" or "in_progress", CI is still running → SKIP this PR, do not merge
