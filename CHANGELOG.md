@@ -1,3 +1,7 @@
+## v1.1.5 — 2026-03-01
+
+- fix: extend skip guard regex to cover batch-changelog commits
+
 ## v1.1.3 — 2026-03-01
 
 <!-- Release notes generated using configuration in .github/release.yml at v1.1.3 -->
