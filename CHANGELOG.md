@@ -1,3 +1,26 @@
+## v1.1.3 — 2026-03-01
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.1.3 -->
+
+## What's Changed
+### Other Changes
+* chore: batch update changelog for all skipped releases by @greynewell in https://github.com/greynewell/claude-software-factory/pull/283
+* fix: replace --limit 100 dedup check with targeted --search in auto-tag.yml by @greynewell in https://github.com/greynewell/claude-software-factory/pull/289
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v1.1.2...v1.1.3
+
+## v1.1.2 — 2026-03-01
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.1.2 -->
+
+## What's Changed
+### Other Changes
+* fix: use approval review timestamp instead of updatedAt for stuck APPROVED PR detection by @greynewell in https://github.com/greynewell/claude-software-factory/pull/280
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v1.1.1...v1.1.2
+
 ## v1.1.1 — 2026-03-01
 
 <!-- Release notes generated using configuration in .github/release.yml at v1.1.1 -->
