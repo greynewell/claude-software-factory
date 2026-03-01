@@ -1,3 +1,8 @@
+## v0.16.0 — 2026-03-01
+
+- fix: restrict gh workflow run to batch-changelog.yml only
+- feat: add gh workflow run to proactive scanner for changelog recovery
+
 ## v0.11.2 — 2026-02-28
 
 - fix: remove ambiguous label guard note from shepherd prompt
