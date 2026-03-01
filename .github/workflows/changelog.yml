@@ -14,6 +14,7 @@ on:
 permissions:
   contents: write
   id-token: write
+  issues: write
 
 jobs:
   update-changelog:
@@ -32,7 +33,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GH_WORKFLOW_TOKEN }}
           allowed_bots: "claude[bot],github-actions[bot]"
-          claude_args: '--allowedTools "Bash(gh release view:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git config:*),Bash(git pull:*),Read,Write(CHANGELOG.md),Edit(CHANGELOG.md)"'
+          claude_args: '--allowedTools "Bash(gh release view:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git config:*),Bash(git pull:*),Bash(gh issue list:*),Bash(gh issue close:*),Read,Write(CHANGELOG.md),Edit(CHANGELOG.md)"'
           prompt: |
             Update CHANGELOG.md for the release ${{ github.event.inputs.tag_name }}.
 
@@ -60,3 +61,9 @@ jobs:
                  git commit -m "chore: update changelog for ${{ github.event.inputs.tag_name }}"
                  git pull --rebase origin main
                  git push origin main
+
+            6. After the push succeeds, close any open GitHub issues that were filed because the
+               changelog was skipped for this tag. Search for open issues mentioning the tag and
+               close them with an explanatory comment:
+                 gh issue list --state open --search "Changelog skipped for ${{ github.event.inputs.tag_name }}" --json number --jq '.[].number' | xargs -I{} gh issue close {} --comment "Resolved: changelog for ${{ github.event.inputs.tag_name }} has been pushed to main."
+               If no matching issues are found, skip this step silently.
