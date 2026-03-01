@@ -1,3 +1,7 @@
+## v1.0.6 — 2026-03-01
+
+- fix: add --delete-branch to changelog gh pr merge commands
+
 ## v1.0.4 — 2026-03-01
 
 ## What's Changed
