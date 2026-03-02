@@ -87,8 +87,25 @@ jobs:
                to avoid duplicate PRs in case the scanner re-triggers before a previous run merges:
                  EXISTING_PR=$(gh pr list --repo ${{ github.repository }} --state open --search "chore: batch update changelog" --json number --jq '.[0].number // empty')
 
-               If EXISTING_PR is non-empty, check whether that PR has any failing CI checks:
-                 FAILING_CHECKS=$(gh pr checks "$EXISTING_PR" --repo ${{ github.repository }} --json state --jq '[.[] | select(.state == "fail" or .state == "error" or .state == "cancelled" or .state == "timeout")] | length' 2>/dev/null || echo "0")
+               If EXISTING_PR is non-empty, first verify it is actually a batch changelog PR to
+               avoid accidentally closing an unrelated PR:
+                 EXISTING_PR_TITLE=$(gh pr view "$EXISTING_PR" --repo ${{ github.repository }} --json title --jq '.title' 2>/dev/null)
+                 EXPECTED_TITLE="chore: batch update changelog for all skipped releases"
+
+               If EXISTING_PR_TITLE does not equal EXPECTED_TITLE exactly, print a warning:
+                 "Warning: PR #<EXISTING_PR> title '<EXISTING_PR_TITLE>' does not match expected batch changelog title. Treating as blocking PR to avoid closing an unrelated PR."
+               Then stop all further processing (do not close, do not create a new PR).
+
+               If EXISTING_PR_TITLE matches, check whether that PR has any failing CI checks.
+               Capture the output and exit code separately so failures are observable:
+                 CHECKS_OUTPUT=$(gh pr checks "$EXISTING_PR" --repo ${{ github.repository }} --json state --jq '[.[] | select(.state == "fail" or .state == "error" or .state == "cancelled" or .state == "timeout")] | length' 2>&1)
+                 CHECKS_EXIT=$?
+
+               If CHECKS_EXIT is non-zero or CHECKS_OUTPUT is not a plain integer, print a warning
+               and treat FAILING_CHECKS as 0 (assume healthy to avoid a false close):
+                 "Warning: Could not determine CI status for PR #<EXISTING_PR> (exit=$CHECKS_EXIT, output=<CHECKS_OUTPUT>). Treating as healthy to avoid incorrectly closing a valid PR."
+                 FAILING_CHECKS=0
+               Otherwise set FAILING_CHECKS=$CHECKS_OUTPUT.
 
                If FAILING_CHECKS is greater than 0, the existing PR is stuck with failing CI.
                Close it and continue with the current run to create a fresh PR:
