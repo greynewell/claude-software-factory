@@ -85,7 +85,7 @@ jobs:
 
             **Changelog skipped issue recovery**:
             Check for accumulated "Changelog skipped" issues by running:
-              gh issue list --state open --search "Changelog skipped" --limit 50
+              gh issue list --state open --search "Changelog skipped for in:title" --limit 50
             Count the results. If 2 or more open "Changelog skipped" issues exist, first
             check whether a batch-changelog run is already queued or in progress:
               gh run list --workflow=batch-changelog.yml --json status --limit 10
