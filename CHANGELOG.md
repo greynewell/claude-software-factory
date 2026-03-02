@@ -1,3 +1,7 @@
+## v1.1.11 — 2026-03-02
+
+- fix: treat timed_out and error CI states as blocking in pr-shepherd
+
 ## v1.1.5 — 2026-03-01
 
 <!-- Release notes generated using configuration in .github/release.yml at v1.1.5 -->
