@@ -109,7 +109,12 @@ jobs:
                   - Get the timestamp of the most recent "please review this PR" comment:
                     Run: gh api repos/${{ github.repository }}/issues/<number>/comments --jq '[.[] | select(.body | contains("please review this PR"))] | max_by(.created_at) | .created_at'
                     (Returns an ISO timestamp string, or null if no such comment exists)
-                  - If the most recent "please review this PR" comment timestamp is non-empty AND is more recent than (or equal to) the last commit timestamp, skip to the next PR without posting (de-dup: the existing trigger was already posted after the latest push).
+                  - If the most recent "please review this PR" comment timestamp is non-empty AND is more recent than (or equal to) the last commit timestamp:
+                    - The re-trigger comment was already posted for this push. Before skipping, check whether the review workflow actually succeeded.
+                    - Get the current state of the claude-code-review check:
+                      Run: gh pr checks <number> --repo ${{ github.repository }} --json name,state --jq '[.[] | select(.name == "claude-code-review")] | .[0].state // "MISSING"'
+                    - If the claude-code-review check state is "FAILURE", do NOT skip — the previous re-trigger attempt failed (e.g. wrong bot triggered, rate limit, API error). Fall through to post another re-trigger comment below.
+                    - Otherwise (state is SUCCESS, IN_PROGRESS, PENDING, or MISSING), skip to the next PR without posting (de-dup: the existing trigger was already posted after the latest push and the review is in progress or completed).
                   - Otherwise (no such comment exists, OR the comment predates the latest commit push), post a comment to re-trigger the review workflow:
                     gh pr comment <number> --repo ${{ github.repository }} --body "@claude please review this PR and submit a formal review decision (APPROVE or REQUEST_CHANGES)."
                d. Otherwise (commit is less than 2 hours old), skip and wait for the review workflow to complete.
