@@ -1,3 +1,73 @@
+## v1.1.11 — 2026-03-02
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.1.11 -->
+
+## What's Changed
+### Other Changes
+* fix: treat timed_out and error CI states as blocking in pr-shepherd by @greynewell in https://github.com/greynewell/claude-software-factory/pull/321
+* fix: use commit timestamp instead of updatedAt in shepherd step 6 by @greynewell in https://github.com/greynewell/claude-software-factory/pull/329
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v1.1.10...v1.1.11
+
+## v1.1.10 — 2026-03-02
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.1.10 -->
+
+## What's Changed
+### Other Changes
+* fix: preserve gh pr create error output to detect existing PR URLs by @greynewell in https://github.com/greynewell/claude-software-factory/pull/318
+* fix: replace hardcoded issue refs #41/#193 in stuck-CHANGES_REQUESTED prompt by @greynewell in https://github.com/greynewell/claude-software-factory/pull/322
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v1.1.9...v1.1.10
+
+## v1.1.9 — 2026-03-01
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.1.9 -->
+
+## What's Changed
+### Other Changes
+* fix: skip no-review-decision stuck-PR when claude-code-review CI is FAILURE by @greynewell in https://github.com/greynewell/claude-software-factory/pull/311
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v1.1.8...v1.1.9
+
+## v1.1.8 — 2026-03-01
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.1.8 -->
+
+## What's Changed
+### Other Changes
+* fix: add waiting to in-flight status check for batch-changelog runs by @greynewell in https://github.com/greynewell/claude-software-factory/pull/312
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v1.1.7...v1.1.8
+
+## v1.1.7 — 2026-03-01
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.1.7 -->
+
+## What's Changed
+### Other Changes
+* fix: skip all shepherd actions for non-claude-task PRs at start of loop by @greynewell in https://github.com/greynewell/claude-software-factory/pull/302
+* fix: add --label claude-task to gh issue create in scanner prompts by @greynewell in https://github.com/greynewell/claude-software-factory/pull/306
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v1.1.6...v1.1.7
+
+## v1.1.6 — 2026-03-01
+
+<!-- Release notes generated using configuration in .github/release.yml at v1.1.6 -->
+
+## What's Changed
+### Other Changes
+* chore: batch update changelog for all skipped releases by @greynewell in https://github.com/greynewell/claude-software-factory/pull/298
+* fix: correct stuck-PR CI check state string from FAILING to FAILURE by @greynewell in https://github.com/greynewell/claude-software-factory/pull/303
+
+
+**Full Changelog**: https://github.com/greynewell/claude-software-factory/compare/v1.1.5...v1.1.6
+
 ## v1.1.5 — 2026-03-01
 
 <!-- Release notes generated using configuration in .github/release.yml at v1.1.5 -->
