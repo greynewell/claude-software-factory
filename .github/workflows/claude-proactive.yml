@@ -82,7 +82,12 @@ jobs:
               gh pr list --repo ${{ github.repository }} --state open --json number,title,createdAt,updatedAt,reviewDecision
             Flag and file an issue for each of the following (if no open issue already covers it):
             - Any PR that has been open > 2 days without a review decision (scanner is blind or
-              the review workflow is broken)
+              the review workflow is broken). Before filing, check CI status for the PR:
+                gh pr checks <number> --repo ${{ github.repository }} --json name,state
+              Skip the PR (do NOT file an issue) if the claude-code-review check has state
+              "FAILURE" — a failing code review CI is the root cause and is already tracked by
+              existing open issues. Only flag a PR as stuck-no-review if the claude-code-review
+              check is absent or has a non-FAILURE state.
             - Any PR whose reviewDecision is APPROVED but has not been merged AND whose most
               recent APPROVED review was submitted more than 2 hours ago (7200 seconds before
               current time). Do NOT use updatedAt for this check — shepherd bot comments refresh
@@ -101,9 +106,10 @@ jobs:
               the shepherd has not merged yet. Only flag a PR as stuck if all checks are passing
               (state "SUCCESS") but the PR still has not been merged.
             - Any PR whose reviewDecision is CHANGES_REQUESTED and has been open > 2 days (the
-              shepherd's CHANGES_REQUESTED handling may be broken — see issues #41 and #193);
-              include the PR number, title, age in days, and links to issues #41 and #193 in the
-              filed issue body
+              shepherd may not be re-requesting a review after the author pushes a fix — check
+              whether claude-pr-shepherd.yml correctly handles stale CHANGES_REQUESTED reviews
+              and whether the merge step is reached after CHANGES_REQUESTED resolves);
+              include the PR number, title, and age in days in the filed issue body
 
             **Changelog skipped issue recovery**:
             Check for accumulated "Changelog skipped" issues by running:
@@ -111,9 +117,9 @@ jobs:
             Count the results. If 2 or more open "Changelog skipped" issues exist, first
             check whether a batch-changelog run is already queued or in progress:
               gh run list --workflow=batch-changelog.yml --json status --limit 10
-            Inspect the returned JSON. If any entry has status "queued" or "in_progress",
+            Inspect the returned JSON. If any entry has status "queued", "in_progress", or "waiting",
             a run is already in flight — skip the trigger entirely and move on.
-            Only if no queued or in_progress runs exist, trigger the workflow:
+            Only if no queued, in_progress, or waiting runs exist, trigger the workflow:
               gh workflow run batch-changelog.yml
             Do NOT file a new issue for this — just trigger the workflow (or skip it) and move on.
 

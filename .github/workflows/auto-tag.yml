@@ -128,19 +128,27 @@ jobs:
           git add CHANGELOG.md
           CHANGELOG_PUSHED=false
           CHANGELOG_PR_NUMBER=""
+          CHANGELOG_FAIL_DETAILS=""
           ORIG_HEAD=$(git rev-parse HEAD)
           CHANGELOG_BRANCH="changelog/${NEW_TAG}"
           git checkout -b "$CHANGELOG_BRANCH"
           git commit -m "chore: update changelog for ${NEW_TAG}"
 
-          if git push origin "$CHANGELOG_BRANCH"; then
+          PUSH_CHANGELOG_OUTPUT=$(git push origin "$CHANGELOG_BRANCH" 2>&1)
+          PUSH_CHANGELOG_EXIT=$?
+          if [ "$PUSH_CHANGELOG_EXIT" -eq 0 ]; then
             CHANGELOG_PR_BODY=$(printf 'Automated changelog update for release %s.\n\nThis PR was created by the `auto-tag` workflow because direct pushes to `main` are protected by branch rules.\n\n_Auto-generated — do not edit._' "${NEW_TAG}")
-            CHANGELOG_PR_URL=$(gh pr create \
+            CHANGELOG_PR_OUTPUT=$(gh pr create \
               --repo "$REPOSITORY" \
               --title "chore: update changelog for ${NEW_TAG}" \
               --body "$CHANGELOG_PR_BODY" \
               --base main \
-              --head "$CHANGELOG_BRANCH" 2>&1) || CHANGELOG_PR_URL=""
+              --head "$CHANGELOG_BRANCH" 2>&1)
+            PR_EXIT=$?
+            CHANGELOG_PR_URL=""
+            if echo "$CHANGELOG_PR_OUTPUT" | grep -q "github.com"; then
+              CHANGELOG_PR_URL=$CHANGELOG_PR_OUTPUT
+            fi
 
             if echo "$CHANGELOG_PR_URL" | grep -q "github.com"; then
               CHANGELOG_PR_NUMBER=$(echo "$CHANGELOG_PR_URL" | grep -oE '[0-9]+$' | tail -1)
@@ -150,7 +158,7 @@ jobs:
               CHANGELOG_PUSHED=true
               echo "Changelog PR #${CHANGELOG_PR_NUMBER} created: ${CHANGELOG_PR_URL}"
             else
-              echo "::warning::Failed to create changelog PR: ${CHANGELOG_PR_URL}"
+              echo "::warning::Failed to create changelog PR: ${CHANGELOG_PR_OUTPUT}"
               # A concurrent run may have already created the PR for this branch.
               # Check before treating this as a failure that requires a notification issue.
               EXISTING_CHANGELOG_PR=$(gh pr list \
@@ -165,6 +173,8 @@ jobs:
                   echo "::warning::auto-merge not available for PR #${EXISTING_CHANGELOG_PR}; it will need manual merge"
                 gh issue edit "$EXISTING_CHANGELOG_PR" --repo "$REPOSITORY" --add-label "claude-task" 2>/dev/null || true
                 CHANGELOG_PUSHED=true
+              else
+                CHANGELOG_FAIL_DETAILS=$(printf 'gh pr create exit code: %s\n\ngh pr create output:\n```\n%s\n```' "$PR_EXIT" "$CHANGELOG_PR_OUTPUT")
               fi
             fi
           else
@@ -180,6 +190,8 @@ jobs:
             if [ -n "$EXISTING_CHANGELOG_PR" ]; then
               echo "Concurrent run already created changelog PR #${EXISTING_CHANGELOG_PR} for ${CHANGELOG_BRANCH} — treating as success"
               CHANGELOG_PUSHED=true
+            else
+              CHANGELOG_FAIL_DETAILS=$(printf 'git push exit code: %s\n\ngit push output:\n```\n%s\n```' "$PUSH_CHANGELOG_EXIT" "$PUSH_CHANGELOG_OUTPUT")
             fi
           fi
 
@@ -262,8 +274,8 @@ jobs:
 
           # Notify if changelog was skipped so a human can update it manually
           if [ "$CHANGELOG_PUSHED" = "false" ]; then
-            ISSUE_BODY=$(printf 'The `auto-tag` workflow tagged and released `%s` but could not update `CHANGELOG.md` because pushing the changelog commit to `main` failed (a concurrent push or transient network error may have occurred during the workflow run).\n\nThe tag and GitHub release were created from the original HEAD. Please update `CHANGELOG.md` manually or trigger the `changelog.yml` workflow.\n\nWorkflow run: %s/%s/actions/runs/%s\n\n@claude please run the changelog.yml workflow for this tag and close this issue once done.' \
-              "$NEW_TAG" "$SERVER_URL" "$REPOSITORY" "$RUN_ID")
+            ISSUE_BODY=$(printf 'The `auto-tag` workflow tagged and released `%s` but could not update `CHANGELOG.md` because the changelog branch push or PR creation failed.\n\n%s\n\nThe tag and GitHub release were created from the original HEAD. Please update `CHANGELOG.md` manually or trigger the `changelog.yml` workflow.\n\nWorkflow run: %s/%s/actions/runs/%s\n\n@claude please run the changelog.yml workflow for this tag and close this issue once done.' \
+              "$NEW_TAG" "$CHANGELOG_FAIL_DETAILS" "$SERVER_URL" "$REPOSITORY" "$RUN_ID")
             EXISTING_ISSUE_NUMBER=$(gh issue list --repo "$REPOSITORY" --state open \
               --search "\"Changelog skipped for ${NEW_TAG}\" in:title" \
               --json number,title | \
@@ -271,7 +283,7 @@ jobs:
             if [ -n "$EXISTING_ISSUE_NUMBER" ]; then
               echo "An open 'Changelog skipped' issue already exists (#${EXISTING_ISSUE_NUMBER}); adding a comment for ${NEW_TAG}"
               gh issue comment "$EXISTING_ISSUE_NUMBER" --repo "$REPOSITORY" \
-                --body "Also failed for ${NEW_TAG} (${SERVER_URL}/${REPOSITORY}/actions/runs/${RUN_ID}). This version will need a manual changelog update once the root cause is resolved." \
+                --body "$(printf 'Also failed for %s (%s/%s/actions/runs/%s). This version will need a manual changelog update once the root cause is resolved.\n\n%s' "$NEW_TAG" "$SERVER_URL" "$REPOSITORY" "$RUN_ID" "$CHANGELOG_FAIL_DETAILS")" \
                 || echo "::warning::Failed to comment on existing issue #${EXISTING_ISSUE_NUMBER}"
             else
               gh issue create \

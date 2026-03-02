@@ -39,7 +39,7 @@ jobs:
             1. Check CI: Run gh pr checks <number> --repo ${{ github.repository }} and evaluate the output carefully before proceeding:
                - If the output is empty (no checks listed), CI has not started yet → SKIP this PR entirely, do not merge
                - If any check shows a status of "pending" or "in_progress", CI is still running → SKIP this PR, do not merge
-               - If any check shows a status of "fail" or "cancelled", CI has failed → do NOT merge; instead apply timestamp-aware de-dup:
+               - If any check shows a status of "fail", "cancelled", "timed_out", or "error", CI has failed → do NOT merge; instead apply timestamp-aware de-dup:
                  Get the timestamp of the most recent "CI checks are failing" comment:
                    Run: gh api repos/${{ github.repository }}/issues/<number>/comments --jq '[.[] | select(.body | contains("CI checks are failing"))] | max_by(.created_at) | .created_at'
                    (Returns an ISO timestamp string, or null if no such comment exists)
@@ -47,11 +47,11 @@ jobs:
                    Run: gh pr view <number> --repo ${{ github.repository }} --json commits --jq '.commits[-1].committedDate'
                  If the most recent "CI checks are failing" comment timestamp is non-empty AND is more recent than (or equal to) the last commit timestamp, skip to the next PR without posting (de-dup: already notified for this push).
                  Otherwise (no such comment exists, OR the comment predates the latest commit), extract the failing check names and post a comment:
-                   failing_checks=$(gh pr checks <number> --repo ${{ github.repository }} --json name,state --jq '[.[] | select(.state == "fail" or .state == "cancelled") | "- \(.name) (\(.state))"] | join("\n")')
+                   failing_checks=$(gh pr checks <number> --repo ${{ github.repository }} --json name,state --jq '[.[] | select(.state == "fail" or .state == "cancelled" or .state == "timed_out" or .state == "error") | "- \(.name) (\(.state))"] | join("\n")')
                    printf '@claude CI checks are failing on this PR. Failing checks:\n%s\nPlease review the failed checks and push a fix.' "${failing_checks}" > /tmp/ci_failure_body.txt
                    gh pr comment <number> --repo ${{ github.repository }} --body-file /tmp/ci_failure_body.txt
                - Checks with status "skipping", "skipped", or "neutral" are non-blocking — treat them as passing
-               - CI passes when: at least one check is present, no check shows "fail" or "cancelled", and every non-skipped check shows "pass" or "success"
+               - CI passes when: at least one check is present, no check shows "fail", "cancelled", "timed_out", or "error", and every non-skipped check shows "pass" or "success"
             2. Check review status: gh pr view <number> --repo ${{ github.repository }} --json reviewDecision,mergeable
             3. If mergeable is false (merge conflicts exist), apply timestamp-aware de-dup:
                Get the timestamp of the most recent "merge conflicts" comment:
@@ -79,7 +79,7 @@ jobs:
                     in_progress=$(gh api "repos/${{ github.repository }}/actions/workflows/claude-code-review.yml/runs?branch=${pr_branch}&status=in_progress&per_page=5" --jq '.total_count')
                     queued=$(gh api "repos/${{ github.repository }}/actions/workflows/claude-code-review.yml/runs?branch=${pr_branch}&status=queued&per_page=5" --jq '.total_count')
                   If in_progress > 0 or queued > 0, skip to the next PR (de-dup: a review run is already in flight).
-                  Otherwise, check the PR age (updatedAt as in step 6b). If age > 7200 seconds, trigger:
+                  Otherwise, check the last commit age (as in step 6b). If age > 7200 seconds, trigger:
                     gh workflow run claude-code-review.yml --repo ${{ github.repository }} --ref "$pr_branch" -f pr_number=<number>
                   Skip to the next PR. Do not post a comment.
                If all pre-checks pass (mergeable is true, CI passes, reviewDecision is APPROVED, approval is not stale, and PR has the claude-task label), merge:
@@ -109,7 +109,7 @@ jobs:
                       in_progress=$(gh api "repos/${{ github.repository }}/actions/workflows/claude-code-review.yml/runs?branch=${pr_branch}&status=in_progress&per_page=5" --jq '.total_count')
                       queued=$(gh api "repos/${{ github.repository }}/actions/workflows/claude-code-review.yml/runs?branch=${pr_branch}&status=queued&per_page=5" --jq '.total_count')
                     If in_progress > 0 or queued > 0, skip to the next PR (de-dup: a review run is already in flight).
-                    Otherwise, check the PR age (updatedAt as in step 6b). If age > 7200 seconds, trigger:
+                    Otherwise, check the last commit age (as in step 6b). If age > 7200 seconds, trigger:
                       gh workflow run claude-code-review.yml --repo ${{ github.repository }} --ref "$pr_branch" -f pr_number=<number>
                     Skip to the next PR.
                e. Otherwise (review is fresh — review timestamp >= commit timestamp), apply timestamp-aware de-dup before posting:
@@ -119,8 +119,12 @@ jobs:
                     If that timestamp is non-empty AND is more recent than (or equal to) the CHANGES_REQUESTED review timestamp, skip to the next PR without posting (de-dup: already notified since the current review).
                     Otherwise post: gh pr comment <number> --repo ${{ github.repository }} --body "@claude please address the review feedback and push an update"
             6. If reviewDecision is null or REVIEW_REQUIRED:
-               a. Check when the PR was last updated: gh pr view <number> --repo ${{ github.repository }} --json updatedAt
-               b. Compute the age in seconds: updated_seconds=$(date -d "<updatedAt value>" +%s 2>/dev/null || date -jf "%Y-%m-%dT%H:%M:%SZ" "<updatedAt value>" +%s); now=$(date +%s); age=$((now - updated_seconds))
+               a. Get the timestamp of the most recent commit to this PR:
+                  Run: gh pr view <number> --repo ${{ github.repository }} --json commits --jq '.commits[-1].committedDate'
+                  Store this as the "last commit timestamp".
+                  Do NOT use updatedAt for this check — shepherd bot comments refresh updatedAt and cause false negatives.
+               b. Compute the age of the last commit in seconds:
+                  commit_seconds=$(date -d "<last commit timestamp>" +%s 2>/dev/null || date -jf "%Y-%m-%dT%H:%M:%SZ" "<last commit timestamp>" +%s); now=$(date +%s); age=$((now - commit_seconds))
                c. If age is greater than 7200 (2 hours):
                   - Get the PR head branch: pr_branch=$(gh pr view <number> --repo ${{ github.repository }} --json headRefName --jq '.headRefName')
                   - Check for a pending or in-progress code-review run on this branch:
@@ -129,6 +133,6 @@ jobs:
                   - If in_progress > 0 or queued > 0, skip to the next PR (de-dup: a review run is already in flight).
                   - Otherwise trigger the review workflow directly (avoids invoking the implementation bot):
                       gh workflow run claude-code-review.yml --repo ${{ github.repository }} --ref "$pr_branch" -f pr_number=<number>
-               d. Otherwise skip and wait for the review workflow to complete
+               d. Otherwise (commit is less than 2 hours old), skip and wait for the review workflow to complete.
 
             Use --repo ${{ github.repository }} on every gh command.
