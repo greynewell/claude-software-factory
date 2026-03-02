@@ -38,7 +38,7 @@ jobs:
                If none of the label objects in the labels array has name equal to "claude-task", skip ALL remaining steps for this PR immediately — do not post any comments, do not check CI, do not check conflicts, do not request reviews, do not attempt to merge. Move on to the next PR.
             1. Check CI: Run gh pr checks <number> --repo ${{ github.repository }} and evaluate the output carefully before proceeding:
                - If the output is empty (no checks listed), CI has not started yet → SKIP this PR entirely, do not merge
-               - If any check shows a status of "PENDING" or "IN_PROGRESS", CI is still running → SKIP this PR, do not merge
+               - If any check shows a status of "PENDING", "IN_PROGRESS", or "QUEUED", CI is still running or not yet started → SKIP this PR entirely, do not merge
                - If any check shows a status of "FAILURE", "CANCELLED", "TIMED_OUT", or "ACTION_REQUIRED", CI has failed → do NOT merge; instead apply timestamp-aware de-dup:
                  Get the timestamp of the most recent "CI checks are failing" comment:
                    Run: gh api repos/${{ github.repository }}/issues/<number>/comments --jq '[.[] | select(.body | contains("CI checks are failing"))] | max_by(.created_at) | .created_at'
