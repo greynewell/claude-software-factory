@@ -135,12 +135,17 @@ jobs:
 
           if git push origin "$CHANGELOG_BRANCH"; then
             CHANGELOG_PR_BODY=$(printf 'Automated changelog update for release %s.\n\nThis PR was created by the `auto-tag` workflow because direct pushes to `main` are protected by branch rules.\n\n_Auto-generated — do not edit._' "${NEW_TAG}")
-            CHANGELOG_PR_URL=$(gh pr create \
+            CHANGELOG_PR_OUTPUT=$(gh pr create \
               --repo "$REPOSITORY" \
               --title "chore: update changelog for ${NEW_TAG}" \
               --body "$CHANGELOG_PR_BODY" \
               --base main \
-              --head "$CHANGELOG_BRANCH" 2>&1) || CHANGELOG_PR_URL=""
+              --head "$CHANGELOG_BRANCH" 2>&1)
+            PR_EXIT=$?
+            CHANGELOG_PR_URL=""
+            if echo "$CHANGELOG_PR_OUTPUT" | grep -q "github.com"; then
+              CHANGELOG_PR_URL=$CHANGELOG_PR_OUTPUT
+            fi
 
             if echo "$CHANGELOG_PR_URL" | grep -q "github.com"; then
               CHANGELOG_PR_NUMBER=$(echo "$CHANGELOG_PR_URL" | grep -oE '[0-9]+$' | tail -1)
@@ -150,7 +155,7 @@ jobs:
               CHANGELOG_PUSHED=true
               echo "Changelog PR #${CHANGELOG_PR_NUMBER} created: ${CHANGELOG_PR_URL}"
             else
-              echo "::warning::Failed to create changelog PR: ${CHANGELOG_PR_URL}"
+              echo "::warning::Failed to create changelog PR: ${CHANGELOG_PR_OUTPUT}"
               # A concurrent run may have already created the PR for this branch.
               # Check before treating this as a failure that requires a notification issue.
               EXISTING_CHANGELOG_PR=$(gh pr list \
