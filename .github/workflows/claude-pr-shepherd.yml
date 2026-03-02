@@ -76,7 +76,7 @@ jobs:
                  Compare the two timestamps as strings (ISO 8601 UTC strings sort correctly lexicographically). If the approval timestamp is less than the commit timestamp, the approval predates the latest commit — skip this PR silently (a new review run should be in flight or will be triggered by step 6). Do not post a comment.
                If all pre-checks pass (mergeable is true, CI passes, reviewDecision is APPROVED, approval is not stale, and PR has the claude-task label), merge:
                Run the merge command, capturing both output and exit code:
-                 merge_output=$(gh pr merge <number> --repo ${{ github.repository }} --squash --delete-branch 2>&1); merge_exit=$?
+                 merge_output=$(gh pr merge <number> --repo ${{ github.repository }} --merge --delete-branch 2>&1); merge_exit=$?
                If merge_exit is non-zero (the merge command failed):
                  Apply timestamp-aware de-dup:
                  Get the timestamp of the most recent "automated merge failed" comment:
