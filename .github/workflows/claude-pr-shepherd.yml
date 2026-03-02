@@ -38,8 +38,8 @@ jobs:
                If none of the label objects in the labels array has name equal to "claude-task", skip ALL remaining steps for this PR immediately — do not post any comments, do not check CI, do not check conflicts, do not request reviews, do not attempt to merge. Move on to the next PR.
             1. Check CI: Run gh pr checks <number> --repo ${{ github.repository }} and evaluate the output carefully before proceeding:
                - If the output is empty (no checks listed), CI has not started yet → SKIP this PR entirely, do not merge
-               - If any check shows a status of "pending" or "in_progress", CI is still running → SKIP this PR, do not merge
-               - If any check shows a status of "fail", "cancelled", "timed_out", or "error", CI has failed → do NOT merge; instead apply timestamp-aware de-dup:
+               - If any check shows a status of "PENDING" or "IN_PROGRESS", CI is still running → SKIP this PR, do not merge
+               - If any check shows a status of "FAILURE", "CANCELLED", "TIMED_OUT", or "ACTION_REQUIRED", CI has failed → do NOT merge; instead apply timestamp-aware de-dup:
                  Get the timestamp of the most recent "CI checks are failing" comment:
                    Run: gh api repos/${{ github.repository }}/issues/<number>/comments --jq '[.[] | select(.body | contains("CI checks are failing"))] | max_by(.created_at) | .created_at'
                    (Returns an ISO timestamp string, or null if no such comment exists)
@@ -47,11 +47,11 @@ jobs:
                    Run: gh pr view <number> --repo ${{ github.repository }} --json commits --jq '.commits[-1].committedDate'
                  If the most recent "CI checks are failing" comment timestamp is non-empty AND is more recent than (or equal to) the last commit timestamp, skip to the next PR without posting (de-dup: already notified for this push).
                  Otherwise (no such comment exists, OR the comment predates the latest commit), extract the failing check names and post a comment:
-                   failing_checks=$(gh pr checks <number> --repo ${{ github.repository }} --json name,state --jq '[.[] | select(.state == "fail" or .state == "cancelled" or .state == "timed_out" or .state == "error") | "- \(.name) (\(.state))"] | join("\n")')
+                   failing_checks=$(gh pr checks <number> --repo ${{ github.repository }} --json name,state --jq '[.[] | select(.state == "FAILURE" or .state == "CANCELLED" or .state == "TIMED_OUT" or .state == "ACTION_REQUIRED") | "- \(.name) (\(.state))"] | join("\n")')
                    printf '@claude CI checks are failing on this PR. Failing checks:\n%s\nPlease review the failed checks and push a fix.' "${failing_checks}" > /tmp/ci_failure_body.txt
                    gh pr comment <number> --repo ${{ github.repository }} --body-file /tmp/ci_failure_body.txt
-               - Checks with status "skipping", "skipped", or "neutral" are non-blocking — treat them as passing
-               - CI passes when: at least one check is present, no check shows "fail", "cancelled", "timed_out", or "error", and every non-skipped check shows "pass" or "success"
+               - Checks with status "SKIPPED" or "NEUTRAL" are non-blocking — treat them as passing
+               - CI passes when: at least one check is present, no check shows "FAILURE", "CANCELLED", "TIMED_OUT", or "ACTION_REQUIRED", and every non-skipped check shows "SUCCESS"
             2. Check review status: gh pr view <number> --repo ${{ github.repository }} --json reviewDecision,mergeable
             3. If mergeable is false (merge conflicts exist), apply timestamp-aware de-dup:
                Get the timestamp of the most recent "merge conflicts" comment:
