@@ -110,11 +110,19 @@ jobs:
               "IN_PROGRESS", or "QUEUED" — a failing or in-progress CI is a legitimate reason
               the shepherd has not merged yet. Only flag a PR as stuck if all checks are passing
               (state "SUCCESS") but the PR still has not been merged.
-            - Any PR whose reviewDecision is CHANGES_REQUESTED and has been open > 2 days (the
-              shepherd may not be re-requesting a review after the author pushes a fix — check
-              whether claude-pr-shepherd.yml correctly handles stale CHANGES_REQUESTED reviews
-              and whether the merge step is reached after CHANGES_REQUESTED resolves);
-              include the PR number, title, and age in days in the filed issue body
+            - Any PR whose reviewDecision is CHANGES_REQUESTED and has been open > 2 days:
+              Before filing a per-PR stuck issue, first run a root-cause shepherd search:
+                gh issue list --state open --search "shepherd CHANGES_REQUESTED" --limit 5
+              If one or more results are returned, a root-cause issue already tracks the underlying
+              shepherd bug — do NOT file a new per-PR issue. Instead, add a comment to the most
+              relevant existing issue (pick the one whose title best matches the shepherd/CHANGES_REQUESTED
+              theme) with the PR number, title, and age in days:
+                gh issue comment <issue_number> --body "PR #<pr_number> (<pr_title>) has been stuck in CHANGES_REQUESTED for <age> days."
+              Only file a new per-PR stuck issue if no shepherd-CHANGES_REQUESTED root-cause issue is
+              open. When filing, include the PR number, title, and age in days in the issue body.
+              (Background: the shepherd may not be re-requesting a review after the author pushes a
+              fix — check whether claude-pr-shepherd.yml correctly handles stale CHANGES_REQUESTED
+              reviews and whether the merge step is reached after CHANGES_REQUESTED resolves.)
 
             **Changelog skipped issue recovery**:
             Check for accumulated "Changelog skipped" issues by running:
