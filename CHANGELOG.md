@@ -1,3 +1,7 @@
+## v1.1.10 — 2026-03-02
+
+- fix: preserve gh pr create error output to detect existing PR URLs
+
 ## v1.1.5 — 2026-03-01
 
 <!-- Release notes generated using configuration in .github/release.yml at v1.1.5 -->
