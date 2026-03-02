@@ -86,6 +86,11 @@ jobs:
             - Any failure patterns in CI that the factory itself could detect proactively
             - Workflows with a high failure rate (e.g., claude-pr-shepherd.yml or claude-proactive.yml
               failing systematically), which may indicate a broken trigger, permission gap, or config issue
+            If the analysis surfaces PRs stuck in CHANGES_REQUESTED (reviewDecision == CHANGES_REQUESTED,
+            open > 2 days), apply the same root-cause guard used by the hourly scanner before filing:
+              gh issue list --state open --search "shepherd CHANGES_REQUESTED" --limit 5
+            If a root-cause shepherd issue already exists, comment on it with the PR details instead
+            of filing a new per-PR symptom issue.
 
             **Changelog skipped issue recovery**:
             Check for accumulated "Changelog skipped" issues by running:
