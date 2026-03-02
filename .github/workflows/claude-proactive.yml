@@ -119,7 +119,10 @@ jobs:
               gh run list --workflow=batch-changelog.yml --json status --limit 10
             Inspect the returned JSON. If any entry has status "queued", "in_progress", or "waiting",
             a run is already in flight — skip the trigger entirely and move on.
-            Only if no queued, in_progress, or waiting runs exist, trigger the workflow:
+            Next, check whether an open batch-changelog PR already exists:
+              gh pr list --state open --search 'chore: batch update changelog' --json number --jq 'length'
+            If the result is 1 or more, an open PR already exists — skip the trigger and move on.
+            Only if no queued, in_progress, or waiting runs exist AND no open PR exists, trigger the workflow:
               gh workflow run batch-changelog.yml
             Do NOT file a new issue for this — just trigger the workflow (or skip it) and move on.
 
