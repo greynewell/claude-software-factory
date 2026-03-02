@@ -97,10 +97,10 @@ jobs:
                Then continue to the git/PR steps below (do not close, do not block; treat this PR as unrelated and proceed as if no existing batch changelog PR was found).
 
                If EXISTING_PR_TITLE matches, check whether that PR has any failing CI checks.
-               Note: gh pr checks --json state only returns the values "pass", "fail", "pending",
-               and "skipping" — other values are not used by this field.
+               Note: gh pr checks --json state returns uppercase values such as "SUCCESS",
+               "FAILURE", "CANCELLED", "TIMED_OUT", "PENDING", and "SKIPPED".
                Capture the output and exit code separately so failures are observable:
-                 CHECKS_OUTPUT=$(gh pr checks "$EXISTING_PR" --repo ${{ github.repository }} --json state --jq '[.[] | select(.state == "fail")] | length' 2>&1)
+                 CHECKS_OUTPUT=$(gh pr checks "$EXISTING_PR" --repo ${{ github.repository }} --json state --jq '[.[] | select(.state == "FAILURE" or .state == "CANCELLED" or .state == "TIMED_OUT")] | length' 2>&1)
                  CHECKS_EXIT=$?
 
                If CHECKS_EXIT is non-zero or CHECKS_OUTPUT is not a plain integer, print a warning
