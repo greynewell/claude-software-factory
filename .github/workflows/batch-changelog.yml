@@ -186,8 +186,7 @@ jobs:
 
             Steps:
 
-            1. Read the data file:
-                 cat "$DATA_FILE"
+            1. Read the data file using the Read tool (path: $DATA_FILE).
 
                The file is a JSON array. Each element has:
                  - issue_number: GitHub issue number (integer)
