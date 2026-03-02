@@ -99,17 +99,19 @@ jobs:
                Otherwise (review timestamp is more recent than or equal to the latest commit timestamp), post a comment:
                  gh pr comment <number> --repo ${{ github.repository }} --body "@claude please address the review feedback and push an update"
             6. If reviewDecision is null or REVIEW_REQUIRED:
-               a. Check when the PR was last updated: gh pr view <number> --repo ${{ github.repository }} --json updatedAt
-               b. Compute the age in seconds: updated_seconds=$(date -d "<updatedAt value>" +%s 2>/dev/null || date -jf "%Y-%m-%dT%H:%M:%SZ" "<updatedAt value>" +%s); now=$(date +%s); age=$((now - updated_seconds))
+               a. Get the timestamp of the most recent commit to this PR:
+                  Run: gh pr view <number> --repo ${{ github.repository }} --json commits --jq '.commits[-1].committedDate'
+                  Store this as the "last commit timestamp".
+                  Do NOT use updatedAt for this check — shepherd bot comments refresh updatedAt and cause false negatives.
+               b. Compute the age of the last commit in seconds:
+                  commit_seconds=$(date -d "<last commit timestamp>" +%s 2>/dev/null || date -jf "%Y-%m-%dT%H:%M:%SZ" "<last commit timestamp>" +%s); now=$(date +%s); age=$((now - commit_seconds))
                c. If age is greater than 7200 (2 hours):
                   - Get the timestamp of the most recent "please review this PR" comment:
                     Run: gh api repos/${{ github.repository }}/issues/<number>/comments --jq '[.[] | select(.body | contains("please review this PR"))] | max_by(.created_at) | .created_at'
                     (Returns an ISO timestamp string, or null if no such comment exists)
-                  - Get the timestamp of the most recent commit to this PR:
-                    Run: gh pr view <number> --repo ${{ github.repository }} --json commits --jq '.commits[-1].committedDate'
                   - If the most recent "please review this PR" comment timestamp is non-empty AND is more recent than (or equal to) the last commit timestamp, skip to the next PR without posting (de-dup: the existing trigger was already posted after the latest push).
                   - Otherwise (no such comment exists, OR the comment predates the latest commit push), post a comment to re-trigger the review workflow:
                     gh pr comment <number> --repo ${{ github.repository }} --body "@claude please review this PR and submit a formal review decision (APPROVE or REQUEST_CHANGES)."
-               d. Otherwise skip and wait for the review workflow to complete
+               d. Otherwise (commit is less than 2 hours old), skip and wait for the review workflow to complete.
 
             Use --repo ${{ github.repository }} on every gh command.
