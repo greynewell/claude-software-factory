@@ -39,7 +39,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GH_WORKFLOW_TOKEN }}
           allowed_bots: "claude[bot],github-actions[bot]"
-          claude_args: '--allowedTools "Bash(gh issue list:*),Bash(gh issue close:*),Bash(gh issue edit:*),Bash(gh label create:*),Bash(gh release view:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git config:*),Bash(git pull:*),Bash(git checkout:*),Bash(gh pr create:*),Bash(gh pr merge:*),Bash(gh pr list:*),Bash(date:*),Read,Write(CHANGELOG.md),Edit(CHANGELOG.md)"'
+          claude_args: '--allowedTools "Bash(gh issue list:*),Bash(gh issue close:*),Bash(gh issue edit:*),Bash(gh label create:*),Bash(gh release view:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git config:*),Bash(git pull:*),Bash(git checkout:*),Bash(gh pr create:*),Bash(gh pr merge:*),Bash(gh pr list:*),Bash(gh pr checks:*),Bash(gh pr close:*),Bash(date:*),Read,Write(CHANGELOG.md),Edit(CHANGELOG.md)"'
           prompt: |
             Batch-update CHANGELOG.md for all open "Changelog skipped" issues.
 
@@ -87,10 +87,20 @@ jobs:
                to avoid duplicate PRs in case the scanner re-triggers before a previous run merges:
                  EXISTING_PR=$(gh pr list --repo ${{ github.repository }} --state open --search "chore: batch update changelog" --json number --jq '.[0].number // empty')
 
-               If EXISTING_PR is non-empty, print "Open batch changelog PR #<EXISTING_PR> already
-               exists — skipping to avoid duplicate" and stop all further processing immediately.
-               Do not create a branch, do not commit, do not push, and do not open a new PR.
-               All remaining steps below are skipped; the task is complete.
+               If EXISTING_PR is non-empty, check whether that PR has any failing CI checks:
+                 FAILING_CHECKS=$(gh pr checks "$EXISTING_PR" --repo ${{ github.repository }} --json state --jq '[.[] | select(.state == "FAILURE" or .state == "ERROR" or .state == "CANCELLED" or .state == "TIMED_OUT")] | length' 2>/dev/null || echo "0")
+
+               If FAILING_CHECKS is greater than 0, the existing PR is stuck with failing CI.
+               Close it and continue with the current run to create a fresh PR:
+                 gh pr close "$EXISTING_PR" --repo ${{ github.repository }} --comment "Closing stale batch changelog PR: CI is failing. A fresh PR will be created by the current run."
+               Print "Closed stuck PR #<EXISTING_PR> with failing CI — proceeding with fresh PR."
+               Then continue to the git/PR steps below (do not stop).
+
+               If FAILING_CHECKS is 0 (CI is passing or pending), print "Open batch changelog PR
+               #<EXISTING_PR> already exists with healthy CI — skipping to avoid duplicate" and
+               stop all further processing immediately. Do not create a branch, do not commit,
+               do not push, and do not open a new PR. All remaining steps below are skipped;
+               the task is complete.
 
                Configure git identity, create a changelog branch, commit, push, and open a PR
                with auto-merge enabled. Direct pushes to main are blocked by branch protection
