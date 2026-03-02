@@ -1,3 +1,7 @@
+## v1.1.12 — 2026-03-02
+
+- fix: add Bash(gh api:*) and Bash(gh pr checks:*) to claude-self-improve allowedTools
+
 ## v1.1.5 — 2026-03-01
 
 <!-- Release notes generated using configuration in .github/release.yml at v1.1.5 -->
